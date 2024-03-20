@@ -3,6 +3,59 @@ use after_effects::fastrand;
 use serde::{Deserialize, Serialize};
 use tweak_shader::wgpu::{self, Device, Queue};
 
+#[repr(u8)]
+#[derive(Debug, PartialEq, PartialOrd, Clone, Copy, Hash)]
+pub enum ParamIdx {
+    LoadButton = 1,
+    UnloadButton = 2,
+    Time = 3,
+    IsImageFilter = 4,
+    UseLayerTime = 5,
+    Dynamic(u8),
+}
+
+impl std::cmp::Eq for ParamIdx {}
+
+impl ParamIdx {
+    pub const fn idx(&self) -> i32 {
+        let val = match self {
+            ParamIdx::LoadButton => 1,
+            ParamIdx::UnloadButton => 2,
+            ParamIdx::Time => 3,
+            ParamIdx::IsImageFilter => 4,
+            ParamIdx::UseLayerTime => 5,
+            ParamIdx::Dynamic(x) => *x as i32,
+        };
+        val
+    }
+}
+
+impl From<u8> for ParamIdx {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => ParamIdx::LoadButton,
+            2 => ParamIdx::UnloadButton,
+            3 => ParamIdx::Time,
+            4 => ParamIdx::IsImageFilter,
+            5 => ParamIdx::UseLayerTime,
+            _ => ParamIdx::Dynamic(value),
+        }
+    }
+}
+
+impl From<ParamIdx> for u8 {
+    fn from(value: ParamIdx) -> Self {
+        match value {
+            ParamIdx::LoadButton => 1,
+            ParamIdx::UnloadButton => 2,
+            ParamIdx::Time => 3,
+            ParamIdx::IsImageFilter => 4,
+            ParamIdx::UseLayerTime => 5,
+            ParamIdx::Dynamic(x) => x,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum TweakError {
     SetUp(String),

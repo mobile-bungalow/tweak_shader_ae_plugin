@@ -3,7 +3,7 @@ use super::*;
 pub fn load_parameters(
     ctx: &mut tweak_shader::RenderContext,
     state: &super::PluginState,
-) -> Result<Vec<(String, u8)>, after_effects::Error> {
+) -> Result<Vec<(String, ParamIdx)>, after_effects::Error> {
     let in_data = state.in_data;
     let current_time = in_data.current_time();
     let time_step = in_data.time_step();
@@ -13,7 +13,7 @@ pub fn load_parameters(
 
     let is_image_filter = state
         .params
-        .get(param_util::IS_IMAGE_FILTER)?
+        .get(ParamIdx::IsImageFilter)?
         .as_checkbox()?
         .value();
 
@@ -26,7 +26,7 @@ pub fn load_parameters(
 
         let mut param = ParamDef::checkout(
             in_data,
-            index as i32,
+            index.idx(),
             current_time,
             time_step,
             time_scale,
@@ -80,7 +80,7 @@ pub fn load_parameters(
             Param::Layer(l) => {
                 if first_image && is_image_filter {
                     first_image = false;
-                    non_null_images.push((name.to_owned(), INPUT_LAYER_CHECKOUT_ID as u8));
+                    non_null_images.push((name.to_owned(), INPUT_LAYER_CHECKOUT_ID));
                     continue;
                 }
                 if l.value().is_some() {
@@ -99,7 +99,7 @@ pub fn load_parameters(
 
     let use_layer_time = state
         .params
-        .get(param_util::USE_LAYER_TIME)?
+        .get(ParamIdx::UseLayerTime)?
         .as_checkbox()?
         .value();
 
@@ -109,11 +109,7 @@ pub fn load_parameters(
     let scale = state.in_data.time_scale();
 
     if !use_layer_time {
-        let time = state
-            .params
-            .get(param_util::TIME)?
-            .as_float_slider()?
-            .value();
+        let time = state.params.get(ParamIdx::Time)?.as_float_slider()?.value();
         ctx.update_time(time as f32);
     } else {
         ctx.update_time(current_time as f32 / scale as f32);
@@ -151,7 +147,10 @@ pub fn render_cpu(
 
     if let Some(converter) = u16_converter {
         let layer_iter = layers.iter().filter_map(|(name, index)| {
-            Some((name.as_str(), cb.checkout_layer_pixels(*index as u32).ok()?))
+            Some((
+                name.as_str(),
+                cb.checkout_layer_pixels(index.idx() as u32).ok()?,
+            ))
         });
 
         converter.prepare_cpu_layer_inputs(&global.device, &global.queue, layer_iter);
@@ -163,7 +162,10 @@ pub fn render_cpu(
         converter.render_u15_to_cpu_buffer(&mut out_layer, &global.device, &global.queue, ctx);
     } else {
         let layer_iter = layers.iter().filter_map(|(name, index)| {
-            Some((name.as_str(), cb.checkout_layer_pixels(*index as u32).ok()?))
+            Some((
+                name.as_str(),
+                cb.checkout_layer_pixels(index.idx() as u32).ok()?,
+            ))
         });
         for (name, layer) in layer_iter {
             ctx.load_image_immediate(

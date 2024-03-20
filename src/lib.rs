@@ -8,10 +8,10 @@ use after_effects as ae;
 use after_effects_sys as ae_sys;
 use types::*;
 
-const INPUT_LAYER_CHECKOUT_ID: i32 = 250;
+const INPUT_LAYER_CHECKOUT_ID: ParamIdx = ParamIdx::Dynamic(240);
 const PLUGIN_ID: i32 = 10;
 
-ae::define_effect!(TweakShaderGlobal, CrossThreadLocal, u8);
+ae::define_effect!(TweakShaderGlobal, CrossThreadLocal, ParamIdx);
 
 impl AdobePluginInstance for CrossThreadLocal {
     fn flatten(&self) -> Result<(u16, Vec<u8>), Error> {
@@ -56,15 +56,15 @@ impl AdobePluginInstance for CrossThreadLocal {
                 }
             }
             Command::UserChangedParam { param_index } => {
-                match param_index as u8 {
-                    param_util::UNLOAD_BUTTON => {
+                match param_index as i32 {
+                    v if v == ParamIdx::UnloadButton.idx() => {
                         if let Some(self_) = self.get() {
                             let mut self_ = self_.write();
                             self_.unload_scene();
                             param_util::update_param_defaults_and_labels(plugin, &mut self_)?;
                         }
                     }
-                    param_util::LOAD_BUTTON => {
+                    v if v == ParamIdx::LoadButton.idx() => {
                         if let Some(local) = self.get() {
                             let mut self_ = local.write();
                             let error_message = self_.launch_shader_selection_dialog(plugin.global);
@@ -74,7 +74,9 @@ impl AdobePluginInstance for CrossThreadLocal {
                             param_util::update_param_defaults_and_labels(plugin, &mut self_)?;
                         }
                     }
-                    param_util::IS_IMAGE_FILTER | param_util::USE_LAYER_TIME => {
+                    v if v == ParamIdx::IsImageFilter.idx()
+                        || v == ParamIdx::IsImageFilter.idx() =>
+                    {
                         if let Some(self_) = self.get() {
                             let mut self_ = self_.write();
 
@@ -84,7 +86,7 @@ impl AdobePluginInstance for CrossThreadLocal {
 
                             let is_image_filter = plugin
                                 .params
-                                .get(param_util::IS_IMAGE_FILTER)?
+                                .get(ParamIdx::IsImageFilter)?
                                 .as_checkbox()?
                                 .value();
 
@@ -139,7 +141,7 @@ impl AdobePluginInstance for CrossThreadLocal {
                             .enumerate()
                             .filter(|(_, (_, v))| v.is_stored_as_texture())
                         {
-                            let id_and_index = param_util::as_param_index(index, v) as i32;
+                            let id_and_index = param_util::as_param_index(index, v).idx();
 
                             cb.checkout_layer(
                                 id_and_index,
@@ -160,7 +162,7 @@ impl AdobePluginInstance for CrossThreadLocal {
                 // We checkout once just to see what the max rect is :(
                 if let Ok(width_test) = cb.checkout_layer(
                     0,
-                    INPUT_LAYER_CHECKOUT_ID - 1,
+                    INPUT_LAYER_CHECKOUT_ID.idx() - 1,
                     &req,
                     in_data.current_time(),
                     in_data.time_step(),
@@ -170,7 +172,7 @@ impl AdobePluginInstance for CrossThreadLocal {
 
                     let full_checkout = cb.checkout_layer(
                         0,
-                        INPUT_LAYER_CHECKOUT_ID,
+                        INPUT_LAYER_CHECKOUT_ID.idx(),
                         &req,
                         in_data.current_time(),
                         in_data.time_step(),
@@ -213,7 +215,7 @@ impl AdobePluginGlobal for TweakShaderGlobal {
 
     fn params_setup(
         &self,
-        params: &mut ae::Parameters<u8>,
+        params: &mut ae::Parameters<ParamIdx>,
         _in_data: InData,
         _out_data: OutData,
     ) -> Result<(), Error> {
@@ -227,7 +229,7 @@ impl AdobePluginGlobal for TweakShaderGlobal {
         cmd: ae::Command,
         _in_data: ae::InData,
         mut out_data: ae::OutData,
-        _params: &mut ae::Parameters<u8>,
+        _params: &mut ae::Parameters<ParamIdx>,
     ) -> Result<(), ae::Error> {
         match cmd {
             ae::Command::About => {
