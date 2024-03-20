@@ -18,8 +18,7 @@ build:
 [windows]
 release:
     cargo build --release
-    Copy-Item -Force '{{TargetDir}}\release\{{BinaryName}}.dll' '{{TargetDir}}\release\{{PluginName}}.aex'
-    Start-Process PowerShell -Verb runAs -ArgumentList "-command Copy-Item -Force '{{TargetDir}}\release\{{BinaryName}}.dll' 'C:\Program Files\Adobe\Common\Plug-ins\7.0\MediaCore\{{PluginName}}.aex'"
+    Copy-Item -Force '{{TargetDir}}\release\{{tweak_shader_ae_rs}}.dll' '{{TargetDir}}\release\{{PluginName}}.aex'
 
 [macos]
 build:
