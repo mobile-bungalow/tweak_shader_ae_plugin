@@ -1,11 +1,90 @@
 use super::*;
 
+// Runs the user shader, copying the results from the GPU to RAM.
+pub fn render(
+    state: &mut super::PluginState,
+    instance: &mut super::Local,
+    extra: &SmartRenderExtra,
+) -> Result<(), after_effects::Error> {
+    let Some(global) = state.global.as_init() else {
+        return Err(Error::Generic);
+    };
+
+    let local = instance.local_init.as_mut();
+    let Some(LocalInit {
+        ref mut ctx,
+        u16_converter,
+        fmt,
+        ..
+    }) = local
+    else {
+        return Err(Error::Generic);
+    };
+    let layers = load_parameters(ctx, state)?;
+
+    let cb = extra.callbacks();
+
+    if let Some(converter) = u16_converter {
+        let layer_iter = layers.iter().filter_map(|(name, index)| {
+            Some((
+                name.as_str(),
+                cb.checkout_layer_pixels(index.idx() as u32).ok()?,
+            ))
+        });
+
+        converter.prepare_cpu_layer_inputs(&global.device, &global.queue, layer_iter);
+        let mut out_layer = cb.checkout_output()?;
+        let bpp = out_layer.bit_depth() / 2;
+        let width = (out_layer.row_bytes()) / bpp as isize;
+        ctx.update_resolution([width as f32, out_layer.height() as f32]);
+
+        converter.render_u15_to_cpu_buffer(&mut out_layer, &global.device, &global.queue, ctx);
+    } else {
+        let layer_iter = layers.iter().filter_map(|(name, index)| {
+            Some((
+                name.as_str(),
+                cb.checkout_layer_pixels(index.idx() as u32).ok()?,
+            ))
+        });
+        for (name, layer) in layer_iter {
+            ctx.load_image_immediate(
+                name,
+                layer.height() as u32,
+                layer.width() as u32,
+                layer.row_bytes() as u32,
+                &global.device,
+                &global.queue,
+                fmt,
+                layer.buffer(),
+            );
+        }
+
+        let mut out_layer = cb.checkout_output()?;
+        let bpp = out_layer.bit_depth() / 2;
+        let width = (out_layer.row_bytes()) / bpp as isize;
+        ctx.update_resolution([width as f32, out_layer.height() as f32]);
+
+        ctx.render_to_slice(
+            &global.queue,
+            &global.device,
+            width as u32,
+            out_layer.height() as u32,
+            out_layer.buffer_mut(),
+        );
+    }
+
+    Ok(())
+}
+
+// Load params from AE to tweak shader
 pub fn load_parameters(
     ctx: &mut tweak_shader::RenderContext,
     state: &super::PluginState,
 ) -> Result<Vec<(String, ParamIdx)>, after_effects::Error> {
     let in_data = state.in_data;
     let current_time = in_data.current_time();
+    let current_frame = state.in_data.current_frame();
+    let current_delta = in_data.time_step();
     let time_step = in_data.time_step();
     let time_scale = in_data.time_scale();
     let mut non_null_images = Vec::new();
@@ -20,8 +99,6 @@ pub fn load_parameters(
     let mut first_image = true;
 
     for (i, (name, mut input)) in ctx.iter_inputs_mut().enumerate() {
-        // handle these with the converters
-
         let index = param_util::index_from_mut(i, &mut input);
 
         let mut param = ParamDef::checkout(
@@ -103,96 +180,15 @@ pub fn load_parameters(
         .as_checkbox()?
         .value();
 
-    let current_time = state.in_data.current_time();
-    let current_frame = state.in_data.current_frame();
-    let current_delta = state.in_data.time_step();
-    let scale = state.in_data.time_scale();
-
     if !use_layer_time {
         let time = state.params.get(ParamIdx::Time)?.as_float_slider()?.value();
         ctx.update_time(time as f32);
     } else {
-        ctx.update_time(current_time as f32 / scale as f32);
+        ctx.update_time(current_time as f32 / time_scale as f32);
     }
 
     ctx.update_frame_count(current_frame as u32);
     ctx.update_delta(current_delta as f32);
 
     Ok(non_null_images)
-}
-
-// Runs the user shader, copying the results from the GPU to RAM.
-pub fn render_cpu(
-    state: &mut super::PluginState,
-    instance: &mut super::Local,
-    extra: &SmartRenderExtra,
-) -> Result<(), after_effects::Error> {
-    let Some(global) = state.global.as_init() else {
-        return Err(Error::Generic);
-    };
-
-    let local = instance.local_init.as_mut();
-    let Some(LocalInit {
-        ref mut ctx,
-        u16_converter,
-        fmt,
-        ..
-    }) = local
-    else {
-        return Err(Error::Generic);
-    };
-    let layers = load_parameters(ctx, state)?;
-
-    let cb = extra.callbacks();
-
-    if let Some(converter) = u16_converter {
-        let layer_iter = layers.iter().filter_map(|(name, index)| {
-            Some((
-                name.as_str(),
-                cb.checkout_layer_pixels(index.idx() as u32).ok()?,
-            ))
-        });
-
-        converter.prepare_cpu_layer_inputs(&global.device, &global.queue, layer_iter);
-        let mut out_layer = cb.checkout_output()?;
-        let bpp = out_layer.bit_depth() / 2;
-        let width = (out_layer.row_bytes()) / bpp as isize;
-        ctx.update_resolution([width as f32, out_layer.height() as f32]);
-
-        converter.render_u15_to_cpu_buffer(&mut out_layer, &global.device, &global.queue, ctx);
-    } else {
-        let layer_iter = layers.iter().filter_map(|(name, index)| {
-            Some((
-                name.as_str(),
-                cb.checkout_layer_pixels(index.idx() as u32).ok()?,
-            ))
-        });
-        for (name, layer) in layer_iter {
-            ctx.load_image_immediate(
-                name,
-                layer.height() as u32,
-                layer.width() as u32,
-                layer.row_bytes() as u32,
-                &global.device,
-                &global.queue,
-                fmt,
-                layer.buffer(),
-            );
-        }
-
-        let mut out_layer = cb.checkout_output()?;
-        let bpp = out_layer.bit_depth() / 2;
-        let width = (out_layer.row_bytes()) / bpp as isize;
-        ctx.update_resolution([width as f32, out_layer.height() as f32]);
-
-        ctx.render_to_slice(
-            &global.queue,
-            &global.device,
-            width as u32,
-            out_layer.height() as u32,
-            out_layer.buffer_mut(),
-        );
-    }
-
-    Ok(())
 }

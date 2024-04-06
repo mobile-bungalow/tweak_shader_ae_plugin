@@ -186,7 +186,7 @@ impl AdobePluginInstance for CrossThreadLocal {
             }
             Command::SmartRender { extra } => {
                 if let Some(local) = self.get() {
-                    render::render_cpu(plugin, &mut local.write(), &extra)?;
+                    render::render(plugin, &mut local.write(), &extra)?;
                 }
             }
             Command::SequenceSetup => {
