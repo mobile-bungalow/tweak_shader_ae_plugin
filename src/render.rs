@@ -119,7 +119,6 @@ pub fn load_parameters(
             Param::Color(co) => {
                 if let Some(color) = input.as_color() {
                     let val = co.value();
-                    dbg!(val);
                     color.current = [
                         val.red as f32 / 255.0,
                         val.green as f32 / 255.0,

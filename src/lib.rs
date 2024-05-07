@@ -44,7 +44,6 @@ impl AdobePluginInstance for CrossThreadLocal {
         let PluginState {
             out_data, in_data, ..
         } = plugin;
-        dbg!(&command);
         match command {
             Command::About => {
                 out_data.set_return_msg("Tweak Shader, v2.0, The flexible shader plugin.")

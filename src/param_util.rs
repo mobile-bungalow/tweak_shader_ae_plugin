@@ -109,7 +109,6 @@ pub fn update_param_defaults_and_labels(
                     });
 
                     let val = c.current;
-                    dbg!(&val);
                     co.set_value(PF_Pixel {
                         alpha: (val[3] * 255.0) as u8,
                         red: (val[0] * 255.0) as u8,

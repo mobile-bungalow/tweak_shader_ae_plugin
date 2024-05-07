@@ -237,7 +237,7 @@ impl LocalInit {
     fn new(device: &Device, queue: &Queue, fmt: wgpu::TextureFormat, src: Option<String>) -> Self {
         let mut build_error = None;
         let ctx = if let Some(src) = src {
-            match tweak_shader::RenderContext::new(src, fmt, device, queue) {
+            match tweak_shader::RenderContext::new_argb_preprocessed(src, fmt, device, queue) {
                 Ok(okay) => okay,
                 Err(e) => {
                     build_error = Some(format!("{e}"));
