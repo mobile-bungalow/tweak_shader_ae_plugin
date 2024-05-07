@@ -170,16 +170,19 @@ pub fn update_param_ui(
         return Ok(());
     };
 
-    for i in ParamIdx::LoadButton.idx()..PARAM_COUNT {
+    for i in ParamIdx::UseLayerTime.idx()..PARAM_COUNT {
         set_param_visibility(state.in_data, ParamIdx::Dynamic(i as u8), false)?;
     }
 
     if local.src.is_none() || local_init.build_error.is_some() {
         set_param_visibility(state.in_data, ParamIdx::LoadButton, true)?;
+        set_param_visibility(state.in_data, ParamIdx::Time, false)?;
+        set_param_visibility(state.in_data, ParamIdx::UnloadButton, false)?;
+        set_param_visibility(state.in_data, ParamIdx::IsImageFilter, false)?;
     } else {
         set_param_visibility(state.in_data, ParamIdx::LoadButton, false)?;
-        set_param_visibility(state.in_data, ParamIdx::UseLayerTime, true)?;
         set_param_visibility(state.in_data, ParamIdx::UnloadButton, true)?;
+        set_param_visibility(state.in_data, ParamIdx::UseLayerTime, true)?;
 
         if !state
             .params
@@ -188,6 +191,8 @@ pub fn update_param_ui(
             .value()
         {
             set_param_visibility(state.in_data, ParamIdx::Time, true)?;
+        } else {
+            set_param_visibility(state.in_data, ParamIdx::Time, false)?;
         }
 
         for (i, (_, var)) in local_init.ctx.iter_inputs().enumerate() {
@@ -250,8 +255,8 @@ pub fn setup_static_params(params: &mut ae::Parameters<ParamIdx>) -> Result<(), 
     params.add(ParamIdx::Time, "Time", ae::FloatSliderDef::setup(float))?;
 
     params.add_with_flags(
-        ParamIdx::UseLayerTime,
-        "Use Layer Time",
+        ParamIdx::IsImageFilter,
+        "Is Image Filter",
         ae::CheckBoxDef::setup(|f| {
             f.set_label("Enabled");
             f.set_default(true);
@@ -261,8 +266,8 @@ pub fn setup_static_params(params: &mut ae::Parameters<ParamIdx>) -> Result<(), 
     )?;
 
     params.add_with_flags(
-        ParamIdx::IsImageFilter,
-        "Is Image Filter",
+        ParamIdx::UseLayerTime,
+        "Use Layer Time",
         ae::CheckBoxDef::setup(|f| {
             f.set_label("Enabled");
             f.set_default(true);

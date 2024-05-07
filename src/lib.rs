@@ -51,8 +51,8 @@ impl AdobePluginInstance for CrossThreadLocal {
             Command::UpdateParamsUi => {
                 if let Some(local) = self.get() {
                     let mut self_ = local.write();
-                    param_util::update_param_ui(plugin, &mut self_)?;
                     param_util::update_param_defaults_and_labels(plugin, &mut self_)?;
+                    param_util::update_param_ui(plugin, &mut self_)?;
                 }
             }
             Command::UserChangedParam { param_index } => {
@@ -70,13 +70,12 @@ impl AdobePluginInstance for CrossThreadLocal {
                             let error_message = self_.launch_shader_selection_dialog(plugin.global);
                             if let Some(err) = error_message {
                                 out_data.set_error_msg(&err);
+                            } else {
+                                param_util::update_param_defaults_and_labels(plugin, &mut self_)?;
                             }
-                            param_util::update_param_defaults_and_labels(plugin, &mut self_)?;
                         }
                     }
-                    v if v == ParamIdx::IsImageFilter.idx()
-                        || v == ParamIdx::IsImageFilter.idx() =>
-                    {
+                    v if v == ParamIdx::IsImageFilter.idx() => {
                         if let Some(self_) = self.get() {
                             let mut self_ = self_.write();
 
@@ -99,11 +98,13 @@ impl AdobePluginInstance for CrossThreadLocal {
 
                             if let Some((i, (_, ty))) = first_image {
                                 let index = param_util::as_param_index(i, ty);
+
                                 if is_image_filter {
                                     let mut param = plugin.params.get_mut(index)?;
                                     let mut layer = param.as_layer_mut()?;
                                     layer.set_default_to_this_layer();
                                 }
+
                                 param_util::set_param_visibility(
                                     plugin.in_data,
                                     index,
