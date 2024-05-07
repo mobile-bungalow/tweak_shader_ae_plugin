@@ -9,7 +9,6 @@ use tweak_shader::input_type::InputType;
 
 pub const MAX_INPUTS: i32 = 32;
 pub const PARAM_TYPE_COUNT: i32 = 7;
-
 pub const STATIC_PARAMS_OFFSET: i32 = ParamIdx::UseLayerTime.idx() + 1;
 pub const PARAM_COUNT: i32 = (PARAM_TYPE_COUNT * MAX_INPUTS) as i32 + STATIC_PARAMS_OFFSET;
 
@@ -110,6 +109,7 @@ pub fn update_param_defaults_and_labels(
                     });
 
                     let val = c.current;
+                    dbg!(&val);
                     co.set_value(PF_Pixel {
                         alpha: (val[3] * 255.0) as u8,
                         red: (val[0] * 255.0) as u8,
@@ -184,7 +184,7 @@ pub fn update_param_ui(
 
         if !state
             .params
-            .get(ParamIdx::LoadButton)?
+            .get(ParamIdx::UseLayerTime)?
             .as_checkbox()?
             .value()
         {
@@ -202,7 +202,7 @@ pub fn update_param_ui(
             .enumerate()
             .find(|(_, (_, ty))| ty.is_stored_as_texture());
 
-        // only show image filter options IF we have at least on image input
+        // only show image filter options IF we have at least one image input
         set_param_visibility(
             state.in_data,
             ParamIdx::IsImageFilter,

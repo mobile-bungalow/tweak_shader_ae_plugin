@@ -44,6 +44,7 @@ impl AdobePluginInstance for CrossThreadLocal {
         let PluginState {
             out_data, in_data, ..
         } = plugin;
+        dbg!(&command);
         match command {
             Command::About => {
                 out_data.set_return_msg("Tweak Shader, v2.0, The flexible shader plugin.")
@@ -123,9 +124,9 @@ impl AdobePluginInstance for CrossThreadLocal {
                 let self_ = self.get();
 
                 if let (Some(local), Some(global)) = (self_, plugin.global.as_init()) {
-                    let mut write_lock = local.write();
+                    let mut local_data_mut = local.write();
 
-                    write_lock.init_or_update(
+                    local_data_mut.init_or_update(
                         &global.device,
                         &global.queue,
                         extra.bit_depth().into(),
@@ -135,7 +136,7 @@ impl AdobePluginInstance for CrossThreadLocal {
                     let time_step = in_data.time_step();
                     let time_scale = in_data.time_scale();
 
-                    if let Some(LocalInit { ctx, .. }) = write_lock.local_init.as_ref() {
+                    if let Some(LocalInit { ctx, .. }) = local_data_mut.local_init.as_ref() {
                         for (index, (_, v)) in ctx
                             .iter_inputs()
                             .enumerate()
@@ -191,14 +192,14 @@ impl AdobePluginInstance for CrossThreadLocal {
             }
             Command::SequenceSetup => {
                 if let (Some(local), Some(global)) = (self.get(), plugin.global.as_init()) {
-                    let mut write_lock = local.write();
-                    write_lock.init_or_update(&global.device, &global.queue, BitDepth::U8);
+                    let mut local_data_mut = local.write();
+                    local_data_mut.init_or_update(&global.device, &global.queue, BitDepth::U8);
                 }
             }
             Command::SequenceResetup => {
                 if let (Some(local), Some(global)) = (self.get(), plugin.global.as_init()) {
-                    let mut write_lock = local.write();
-                    write_lock.init_or_update(&global.device, &global.queue, BitDepth::U8);
+                    let mut local_data_mut = local.write();
+                    local_data_mut.init_or_update(&global.device, &global.queue, BitDepth::U8);
                 }
             }
             _ => {}
