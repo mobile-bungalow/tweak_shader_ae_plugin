@@ -9,7 +9,7 @@ crate-type = ["cdylib"]
 [dependencies]
 after-effects = { git = "https://github.com/AdrianEddy/after-effects.git" }
 after-effects-sys = { git = "https://github.com/AdrianEddy/after-effects.git" }
-tweak_shader = { version = "0.2.3" , features = ["after_effects"] }
+tweak_shader = { version = "0.2.5", features = ["after_effects"] }
 log = "0.4"
 serde = "1.0"
 serde_json = "1.0"
@@ -20,11 +20,6 @@ log-panics = "2.1"
 pollster = "0.3.0"
 rfd = "0.12.1"
 homedir = "0.2.1"
-
-
-[target.'cfg(target_os = "macos")'.dependencies]
-metal = "0.27"
-
 
 [build-dependencies]
 pipl = { git = "https://github.com/AdrianEddy/after-effects.git"  }

@@ -46,12 +46,13 @@ pub fn render(
                 cb.checkout_layer_pixels(index.idx() as u32).ok()?,
             ))
         });
+
         for (name, layer) in layer_iter {
             ctx.load_image_immediate(
                 name,
                 layer.height() as u32,
                 layer.width() as u32,
-                layer.row_bytes() as u32,
+                layer.buffer_stride() as u32,
                 &global.device,
                 &global.queue,
                 fmt,
@@ -60,8 +61,8 @@ pub fn render(
         }
 
         let mut out_layer = cb.checkout_output()?;
-        let bpp = out_layer.bit_depth() / 2;
-        let width = (out_layer.row_bytes()) / bpp as isize;
+        let bytes_per_pixel = out_layer.bit_depth() / 2;
+        let width = (out_layer.buffer_stride()) / bytes_per_pixel as usize;
         ctx.update_resolution([width as f32, out_layer.height() as f32]);
 
         ctx.render_to_slice(
