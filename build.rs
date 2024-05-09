@@ -21,7 +21,7 @@ fn main() {
         },
         Property::AE_Effect_Version {
             version: 1,
-            subversion: 0,
+            subversion: 1,
             bugversion: 0,
             stage: Stage::Develop,
             build: 0,

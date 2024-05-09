@@ -1556,7 +1556,9 @@ dependencies = [
 
 [[package]]
 name = "tweak_shader"
-version = "0.2.4"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f591bef2c153f4435ddc973d2dfd9a3d873405e8b1b50dcad2c0dc8cb5186df6"
 dependencies = [
  "bytemuck",
  "glsl",
@@ -1566,7 +1568,7 @@ dependencies = [
 
 [[package]]
 name = "tweak_shader_ae_rs"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "after-effects",
  "after-effects-sys",
@@ -1574,7 +1576,6 @@ dependencies = [
  "homedir",
  "log",
  "log-panics",
- "metal",
  "pipl",
  "pollster",
  "pretty-hex",
