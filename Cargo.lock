@@ -1646,7 +1646,9 @@ dependencies = [
 
 [[package]]
 name = "tweak_shader"
-version = "0.3.1"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40310eeaa0c04be66fb752adbbd95bf66db757ddf16548529aa785abfd5d60b2"
 dependencies = [
  "bytemuck",
  "nom",
@@ -1655,7 +1657,7 @@ dependencies = [
 
 [[package]]
 name = "tweak_shader_ae_rs"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "after-effects",
  "after-effects-sys",
