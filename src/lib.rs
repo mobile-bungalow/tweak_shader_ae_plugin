@@ -1,4 +1,5 @@
 mod param_util;
+mod preprocessing;
 mod render;
 mod types;
 
@@ -9,7 +10,7 @@ use after_effects_sys as ae_sys;
 use types::*;
 
 const INPUT_LAYER_CHECKOUT_ID: ParamIdx = ParamIdx::Dynamic(240);
-const PLUGIN_ID: i32 = 10;
+const PLUGIN_ID: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
 
 ae::define_effect!(TweakShaderGlobal, CrossThreadLocal, ParamIdx);
 
@@ -35,7 +36,6 @@ impl AdobePluginInstance for CrossThreadLocal {
         Ok(())
     }
 
-    #[cfg(does_dialog)]
     fn do_dialog(&mut self, _: &mut PluginState) -> Result<(), ae::Error> {
         Ok(())
     }
@@ -56,15 +56,15 @@ impl AdobePluginInstance for CrossThreadLocal {
                 }
             }
             Command::UserChangedParam { param_index } => {
-                match param_index as i32 {
-                    v if v == ParamIdx::UnloadButton.idx() => {
+                match ParamIdx::from(param_index as u8) {
+                    ParamIdx::UnloadButton => {
                         if let Some(self_) = self.get() {
                             let mut self_ = self_.write();
                             self_.unload_scene();
                             param_util::update_param_defaults_and_labels(plugin, &mut self_)?;
                         }
                     }
-                    v if v == ParamIdx::LoadButton.idx() => {
+                    ParamIdx::LoadButton => {
                         if let Some(local) = self.get() {
                             let mut self_ = local.write();
                             let error_message = self_.launch_shader_selection_dialog(plugin.global);
@@ -75,7 +75,7 @@ impl AdobePluginInstance for CrossThreadLocal {
                             }
                         }
                     }
-                    v if v == ParamIdx::IsImageFilter.idx() => {
+                    ParamIdx::IsImageFilter => {
                         if let Some(self_) = self.get() {
                             let mut self_ = self_.write();
 
@@ -220,6 +220,7 @@ impl AdobePluginGlobal for TweakShaderGlobal {
         _in_data: InData,
         _out_data: OutData,
     ) -> Result<(), Error> {
+        dbg!("here");
         param_util::setup_static_params(params)?;
         param_util::create_variant_backing(params)?;
         Ok(())
@@ -232,11 +233,19 @@ impl AdobePluginGlobal for TweakShaderGlobal {
         mut out_data: ae::OutData,
         _params: &mut ae::Parameters<ParamIdx>,
     ) -> Result<(), ae::Error> {
+        log::debug!("{:?}", &cmd);
         match cmd {
             ae::Command::About => {
                 out_data.set_return_msg("The Tweak shader flexible shader plugin.");
             }
             Command::GlobalSetup => {
+                env_logger::init();
+                let suite = ae::aegp::suites::Utility::new()?;
+
+                PLUGIN_ID
+                    .set(suite.register_with_aegp(None, "tweak_shader")?)
+                    .expect("already set");
+
                 if let TweakShaderGlobal::Uninit = self {
                     out_data.set_return_msg("Tweak Shader Failed to initialize");
                     return Err(ae::Error::Generic);

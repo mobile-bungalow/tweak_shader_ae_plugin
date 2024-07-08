@@ -230,6 +230,13 @@ pub fn update_param_ui(
     Ok(())
 }
 
+fn default_flags() -> ParamFlag {
+    ParamFlag::CANNOT_TIME_VARY
+        | ParamFlag::TWIRLY
+        | ParamFlag::SUPERVISE
+        | ParamFlag::SKIP_REVEAL_WHEN_UNHIDDEN
+}
+
 // set up the params that every instance uses
 pub fn setup_static_params(params: &mut ae::Parameters<ParamIdx>) -> Result<(), Error> {
     params.add_with_flags(
@@ -238,7 +245,7 @@ pub fn setup_static_params(params: &mut ae::Parameters<ParamIdx>) -> Result<(), 
         ae::ButtonDef::setup(|f| {
             f.set_label("Select Source");
         }),
-        ParamFlag::CANNOT_TIME_VARY | ParamFlag::TWIRLY | ParamFlag::SUPERVISE,
+        default_flags(),
         ae::ParamUIFlags::empty(),
     )?;
 
@@ -248,7 +255,7 @@ pub fn setup_static_params(params: &mut ae::Parameters<ParamIdx>) -> Result<(), 
         ae::ButtonDef::setup(|f| {
             f.set_label("Unload Source");
         }),
-        ParamFlag::CANNOT_TIME_VARY | ParamFlag::TWIRLY | ParamFlag::SUPERVISE,
+        default_flags(),
         ae::ParamUIFlags::empty(),
     )?;
 
@@ -261,7 +268,7 @@ pub fn setup_static_params(params: &mut ae::Parameters<ParamIdx>) -> Result<(), 
             f.set_label("Enabled");
             f.set_default(true);
         }),
-        ParamFlag::CANNOT_TIME_VARY | ParamFlag::TWIRLY | ParamFlag::SUPERVISE,
+        default_flags(),
         ae::ParamUIFlags::empty(),
     )?;
 
@@ -272,7 +279,7 @@ pub fn setup_static_params(params: &mut ae::Parameters<ParamIdx>) -> Result<(), 
             f.set_label("Enabled");
             f.set_default(true);
         }),
-        ParamFlag::CANNOT_TIME_VARY | ParamFlag::TWIRLY | ParamFlag::SUPERVISE,
+        default_flags(),
         ae::ParamUIFlags::empty(),
     )?;
 
@@ -288,7 +295,7 @@ pub fn create_variant_backing(params: &mut ae::Parameters<ParamIdx>) -> Result<(
             let name = format!("INPUT {}", base_index + offset);
             let index = ParamIdx::Dynamic(base_index as u8 + offset as u8);
             let ui_flags = ae::ParamUIFlags::empty();
-            let param_flag = ParamFlag::TWIRLY;
+            let param_flag = ParamFlag::TWIRLY | ParamFlag::SKIP_REVEAL_WHEN_UNHIDDEN;
             match offset as usize {
                 f if f == Variant::Float as usize => params.add_with_flags(
                     index,
@@ -353,8 +360,16 @@ pub fn set_param_visibility(in_data: InData, index: ParamIdx, visible: bool) -> 
     let stream_suite = suites::Stream::new()?;
     let interface = suites::PFInterface::new()?;
 
-    let effect = interface.new_effect_for_effect(in_data.effect(), crate::PLUGIN_ID)?;
-    let stream = stream_suite.new_effect_stream_by_index(effect, crate::PLUGIN_ID, index.idx())?;
+    // why unwrap or 10? it seems like if you don't register any AEGP hooks
+    // your plugin ID is invalid, and using a plugin id that is *not* your assigned plugin ID
+    // is the only way to make the aegp API work.
+    let effect = interface
+        .new_effect_for_effect(in_data.effect(), *crate::PLUGIN_ID.get().unwrap_or(&10))?;
+    let stream = stream_suite.new_effect_stream_by_index(
+        effect,
+        *crate::PLUGIN_ID.get().unwrap_or(&10),
+        index.idx(),
+    )?;
     dyn_stream_suite.set_dynamic_stream_flag(
         stream,
         DynamicStreamFlags::Hidden,

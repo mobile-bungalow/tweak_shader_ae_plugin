@@ -61,16 +61,16 @@ pub fn render(
         }
 
         let mut out_layer = cb.checkout_output()?;
-        let bytes_per_pixel = out_layer.bit_depth() / 2;
-        let width = (out_layer.buffer_stride()) / bytes_per_pixel as usize;
-        ctx.update_resolution([width as f32, out_layer.height() as f32]);
+        let stride = out_layer.buffer_stride();
+        ctx.update_resolution([out_layer.width() as f32, out_layer.height() as f32]);
 
         ctx.render_to_slice(
             &global.queue,
             &global.device,
-            width as u32,
             out_layer.height() as u32,
+            out_layer.width() as u32,
             out_layer.buffer_mut(),
+            Some(stride as u32),
         );
     }
 

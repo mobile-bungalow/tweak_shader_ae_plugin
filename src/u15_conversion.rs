@@ -97,8 +97,14 @@ impl U16ConversionContext {
         self.fp_to_u16_ctx
             .load_shared_texture(target_texture, "input_image");
 
-        self.fp_to_u16_ctx
-            .render_to_slice(queue, device, width, height, out_layer.buffer_mut());
+        self.fp_to_u16_ctx.render_to_slice(
+            queue,
+            device,
+            width,
+            height,
+            out_layer.buffer_mut(),
+            None,
+        );
     }
 
     // Loads or creates all textures from the iterator into staging buffers.

@@ -22,16 +22,14 @@ release:
 
 [macos]
 build:
-    cargo build
-    just -f {{justfile()}} create_bundle debug {{TargetDir}} ''
+    just -f {{justfile()}} create_bundle debug {{TargetDir}} 'Apple Development' ''
 
 [macos]
 release:
-    cargo build --release
-    just -f {{justfile()}} create_bundle release {{TargetDir}} --release
+    just -f {{justfile()}} create_bundle release {{TargetDir}} 'Developer ID Application' --release
 
 [macos]
-create_bundle BuildType TargetDir BuildFlags:
+create_bundle BuildType TargetDir CertType BuildFlags:
     echo "Creating universal plugin bundle"
     rm -Rf {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin
     mkdir -p {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/Resources
@@ -53,5 +51,4 @@ create_bundle BuildType TargetDir BuildFlags:
     lipo {{TargetDir}}/{x86_64,aarch64}-apple-darwin/{{BuildType}}/lib{{CrateName}}.dylib -create -output {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/MacOS/{{BinaryName}}.dylib
     mv {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/MacOS/{{BinaryName}}.dylib {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/MacOS/{{PluginName}}
 
-    # codesign with the first development cert we can find using its hash
-    codesign --options runtime --timestamp -strict  --sign $( security find-identity -v -p codesigning | grep -m 1 "Apple Development" | awk -F ' ' '{print $2}' ) {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin
+    codesign --options runtime --timestamp -strict  --sign $( security find-identity -v -p codesigning | grep -m 1 "{{CertType}}" | awk -F ' ' '{print $2}' ) {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin
