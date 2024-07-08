@@ -67,23 +67,20 @@ impl FormatSwizzler {
 
 impl VisitorMut for FormatSwizzler {
     fn visit_expr(&mut self, e: &mut Expr) -> glsl::visitor::Visit {
-        match e {
-            Expr::FunCall(id, args) => {
-                for expr in args.iter_mut() {
-                    expr.visit_mut(self);
-                }
-
-                let mut string = String::new();
-                glsl::transpiler::glsl::show_function_identifier(&mut string, id);
-                if TEXTURE_SAMPLING_FUNCTIONS.contains(&string.as_str()) {
-                    let clone = e.clone();
-                    let swizzed = Expr::Dot(clone.into(), glsl::syntax::Identifier("gbar".into()));
-                    *e = swizzed;
-                }
-
-                return glsl::visitor::Visit::Parent;
+        if let Expr::FunCall(id, args) = e {
+            for expr in args.iter_mut() {
+                expr.visit_mut(self);
             }
-            _ => {}
+
+            let mut string = String::new();
+            glsl::transpiler::glsl::show_function_identifier(&mut string, id);
+            if TEXTURE_SAMPLING_FUNCTIONS.contains(&string.as_str()) {
+                let clone = e.clone();
+                let swizzed = Expr::Dot(clone.into(), glsl::syntax::Identifier("gbar".into()));
+                *e = swizzed;
+            }
+
+            return glsl::visitor::Visit::Parent;
         }
 
         glsl::visitor::Visit::Children

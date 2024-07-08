@@ -10,7 +10,7 @@ use tweak_shader::input_type::InputType;
 pub const MAX_INPUTS: i32 = 32;
 pub const PARAM_TYPE_COUNT: i32 = 7;
 pub const STATIC_PARAMS_OFFSET: i32 = ParamIdx::UseLayerTime.idx() + 1;
-pub const PARAM_COUNT: i32 = (PARAM_TYPE_COUNT * MAX_INPUTS) as i32 + STATIC_PARAMS_OFFSET;
+pub const PARAM_COUNT: i32 = (PARAM_TYPE_COUNT * MAX_INPUTS) + STATIC_PARAMS_OFFSET;
 
 pub enum Variant {
     Float = 0,

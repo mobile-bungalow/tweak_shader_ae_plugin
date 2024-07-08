@@ -10,7 +10,7 @@ use after_effects_sys as ae_sys;
 use types::*;
 
 const INPUT_LAYER_CHECKOUT_ID: ParamIdx = ParamIdx::Dynamic(240);
-const PLUGIN_ID: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
+static PLUGIN_ID: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
 
 ae::define_effect!(TweakShaderGlobal, CrossThreadLocal, ParamIdx);
 

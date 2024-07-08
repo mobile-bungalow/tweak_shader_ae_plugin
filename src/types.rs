@@ -18,15 +18,14 @@ impl std::cmp::Eq for ParamIdx {}
 
 impl ParamIdx {
     pub const fn idx(&self) -> i32 {
-        let val = match self {
+        match self {
             ParamIdx::LoadButton => 1,
             ParamIdx::UnloadButton => 2,
             ParamIdx::Time => 3,
             ParamIdx::IsImageFilter => 4,
             ParamIdx::UseLayerTime => 5,
             ParamIdx::Dynamic(x) => *x as i32,
-        };
-        val
+        }
     }
 }
 
@@ -164,9 +163,9 @@ impl Default for TweakShaderGlobal {
     fn default() -> Self {
         // GPU buffers on windows are in Cuda.
         let instance_desc = wgpu::InstanceDescriptor {
-            #[cfg(any(target_os = "windows"))]
+            #[cfg(target_os = "windows")]
             backends: wgpu::Backends::VULKAN,
-            #[cfg(any(target_os = "macos"))]
+            #[cfg(target_os = "macos")]
             backends: wgpu::Backends::METAL,
             ..Default::default()
         };
@@ -307,9 +306,7 @@ impl Local {
     }
 
     pub fn launch_shader_selection_dialog(&mut self, global: &TweakShaderGlobal) -> Option<String> {
-        let Some(InnerGlobal { queue, device, .. }) = global.as_init() else {
-            return None;
-        };
+        let InnerGlobal { queue, device, .. } = global.as_init()?;
 
         let home_dir = match homedir::get_my_home() {
             Ok(Some(home)) => home,
