@@ -67,8 +67,8 @@ pub fn render(
         ctx.render_to_slice(
             &global.queue,
             &global.device,
-            out_layer.height() as u32,
             out_layer.width() as u32,
+            out_layer.height() as u32,
             out_layer.buffer_mut(),
             Some(stride as u32),
         );

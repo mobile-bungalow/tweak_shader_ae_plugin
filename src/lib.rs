@@ -220,7 +220,6 @@ impl AdobePluginGlobal for TweakShaderGlobal {
         _in_data: InData,
         _out_data: OutData,
     ) -> Result<(), Error> {
-        dbg!("here");
         param_util::setup_static_params(params)?;
         param_util::create_variant_backing(params)?;
         Ok(())
@@ -233,7 +232,6 @@ impl AdobePluginGlobal for TweakShaderGlobal {
         mut out_data: ae::OutData,
         _params: &mut ae::Parameters<ParamIdx>,
     ) -> Result<(), ae::Error> {
-        log::debug!("{:?}", &cmd);
         match cmd {
             ae::Command::About => {
                 out_data.set_return_msg("The Tweak shader flexible shader plugin.");
