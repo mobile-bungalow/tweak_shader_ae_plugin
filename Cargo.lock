@@ -1647,8 +1647,6 @@ dependencies = [
 [[package]]
 name = "tweak_shader"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b315cd2e020511ccb5fe821b4b2c9f586a8f8474839f00a7a280bde91dd32cf"
 dependencies = [
  "bytemuck",
  "nom",

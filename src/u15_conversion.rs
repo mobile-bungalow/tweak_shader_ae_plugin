@@ -24,23 +24,19 @@ impl U16ConversionContext {
                 device,
                 queue,
             )
-            .unwrap(),
+            .expect("fp conversion conext broken"),
             fp_to_u16_ctx: tweak_shader::RenderContext::new(
                 include_str!("./resources/to_u15.fs"),
                 wgpu::TextureFormat::Rgba16Uint,
                 device,
                 queue,
             )
-            .unwrap(),
+            .expect("u15 conversion context broken"),
             fp_staging_textures: Default::default(),
             fp16_output_texture: None,
         }
     }
 
-    // A note to people looking at this:
-    // the tweak shader library will
-    // convert all unorm shaders to output ARGB format
-    // when compiled with the "after_effects" features.
     pub fn render_u15_to_cpu_buffer(
         &mut self,
         out_layer: &mut ae::Layer,
@@ -97,13 +93,14 @@ impl U16ConversionContext {
         self.fp_to_u16_ctx
             .load_shared_texture(target_texture, "input_image");
 
+        let stride = out_layer.buffer_stride();
         self.fp_to_u16_ctx.render_to_slice(
             queue,
             device,
             width,
             height,
             out_layer.buffer_mut(),
-            None,
+            Some(stride as u32),
         );
     }
 
