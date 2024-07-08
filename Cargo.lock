@@ -1646,7 +1646,7 @@ dependencies = [
 
 [[package]]
 name = "tweak_shader"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "bytemuck",
  "nom",
