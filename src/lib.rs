@@ -237,7 +237,9 @@ impl AdobePluginGlobal for TweakShaderGlobal {
                 out_data.set_return_msg("The Tweak shader flexible shader plugin.");
             }
             Command::GlobalSetup => {
+                #[cfg(target_os = "macos")]
                 env_logger::init();
+
                 let suite = ae::aegp::suites::Utility::new()?;
 
                 PLUGIN_ID

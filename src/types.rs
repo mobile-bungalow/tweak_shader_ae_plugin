@@ -211,6 +211,12 @@ impl Default for TweakShaderGlobal {
         };
 
         device.on_uncaptured_error(Box::new(|e| match e {
+            wgpu::Error::Internal {
+                source,
+                description,
+            } => {
+                panic!("Internal GPU Error! {source} : {description}");
+            }
             wgpu::Error::OutOfMemory { .. } => {
                 panic!("Out of memory");
             }
