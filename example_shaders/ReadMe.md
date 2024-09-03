@@ -2,44 +2,6 @@
 
 The Tweak Shader Library provides a rendering and bookkeeping context for an interactive screen shader format. It allows users to create shaders reminiscent of ShaderToy or ISF shaders with custom uniforms that can be tweaked at runtime. The library features support for image inputs as well as various other types, including colors, floats, integers, 2D points, and more. The design and functionality of this library were inspired by the ISF (Interactive Shader Format) project.
 
- ## Usage
-
- ```rust, ignore
- use tweak_shader::RenderContext;
- use wgpu::TextureFormat;
-
- let src =  r#"
-#version 450
-#pragma tweak_shader(version=1.0)
-
-layout(location = 0) out vec4 out_color;
-
-#pragma input(float, name="foo", default=0.0, min=0.0, max=1.0)
-#pragma input(float, name="bar")
-#pragma input(float, name="baz", default=0.5)
-layout(set = 0, binding = 0) uniform Inputs {
-    float foo;
-    float bar;
-    float baz;
-};
-
-void main()
-{
-    out_color = vec4(foo, bar, baz, 1.0);
-}
- "#;
-
- let format = TextureFormat::Rgba8UnormSrgb;
- let device = // your wgpu::Device here;
- let queue = // your wgpu::Queue here;
-
- let render_context = RenderContext::new(isf_shader_source, format, &device, &queue).unwrap();
-
- // Congratulations! You now have a 255x255 blue square.
- let output = render_context.render_to_vec(&queue, &device, 255, 255);
-
- ```
-
  The valid document pragmas are as follows.
 
  ### Input Types
