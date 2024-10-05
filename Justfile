@@ -50,5 +50,4 @@ create_bundle BuildType TargetDir CertType BuildFlags:
 
     lipo {{TargetDir}}/{x86_64,aarch64}-apple-darwin/{{BuildType}}/lib{{CrateName}}.dylib -create -output {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/MacOS/{{BinaryName}}.dylib
     mv {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/MacOS/{{BinaryName}}.dylib {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/MacOS/{{PluginName}}
-
-    codesign --options runtime --timestamp -strict  --sign $( security find-identity -v -p codesigning | grep -m 1 "{{CertType}}" | awk -F ' ' '{print $2}' ) {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin
+    /usr/bin/codesign --force --options runtime --timestamp -s $( security find-identity -v -p codesigning | grep -m 1 "{{CertType}}" | awk -F ' ' '{print $2}' ) {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin
