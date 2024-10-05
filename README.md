@@ -2,7 +2,7 @@
 
 <img src="./media/output_smaller.gif" />
 
-This plugin allows you to run a shadertoy like glsl format in after effects. The glsl format is [documented here](https://github.com/mobile-bungalow/tweak_shader).
+This plugin allows you to run a shadertoy like glsl format in after effects. The glsl format is [documented here](https://github.com/mobile-bungalow/tweak_shader_ae_rs/tree/main/example_shaders).
 
 The plugins supports multiple render passes, any number of layer inputs, up to 32 total inputs of any kind, and renders 
 at any bit depth. It builds for MacOs and Windows.
