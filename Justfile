@@ -1,13 +1,13 @@
 PluginName       := "TweakShader"
 BundleIdentifier := "com.adobe.AfterEffects.{{PluginName}}"
 BinaryName       := lowercase(PluginName)
-CrateName        := "tweak_shader_ae_rs" 
+CrateName        := "tweak_shader_ae_rs"
 
 set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
 TargetDir := env_var_or_default("CARGO_TARGET_DIR", "target")
-export AESDK_ROOT := if env("AESDK_ROOT", "") == "" { justfile_directory() / "../../sdk/AfterEffectsSDK" } else { env_var("AESDK_ROOT") }
-export PRSDK_ROOT := if env("PRSDK_ROOT", "") == "" { justfile_directory() / "../../sdk/Premiere Pro 22.0 C++ SDK" } else { env_var("PRSDK_ROOT") }
+# export AESDK_ROOT := if env("AESDK_ROOT", "") == "" { justfile_directory() / "../../sdk/AfterEffectsSDK" } else { env_var("AESDK_ROOT") }
+# export PRSDK_ROOT := if env("PRSDK_ROOT", "") == "" { justfile_directory() / "../../sdk/Premiere Pro 22.0 C++ SDK" } else { env_var("PRSDK_ROOT") }
 
 
 [windows]

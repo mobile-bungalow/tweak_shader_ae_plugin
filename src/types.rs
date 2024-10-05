@@ -187,9 +187,10 @@ impl Default for TweakShaderGlobal {
         };
 
         let mut required_limits =
-            wgpu::Limits::downlevel_webgl2_defaults().using_resolution(adapter.limits());
+            wgpu::Limits::downlevel_defaults().using_resolution(adapter.limits());
 
         required_limits.max_push_constant_size = 256;
+        required_limits.max_storage_textures_per_shader_stage = 4;
 
         let maybe_dq = pollster::block_on(async {
             adapter
@@ -197,7 +198,8 @@ impl Default for TweakShaderGlobal {
                     &wgpu::DeviceDescriptor {
                         label: None,
                         required_features: wgpu::Features::PUSH_CONSTANTS
-                            | wgpu::Features::TEXTURE_FORMAT_16BIT_NORM,
+                            | wgpu::Features::TEXTURE_FORMAT_16BIT_NORM
+                            | wgpu::Features::VERTEX_WRITABLE_STORAGE,
                         required_limits,
                     },
                     None,

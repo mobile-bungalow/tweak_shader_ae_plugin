@@ -94,8 +94,8 @@ pub fn update_param_defaults_and_labels(
         match param {
             ae::Param::CheckBox(mut cb) => {
                 if let InputType::Bool(b) = var {
-                    cb.set_default(b.default > 0);
-                    cb.set_value(b.current > 0);
+                    cb.set_default(b.default.is_true());
+                    cb.set_value(b.current.is_true());
                 }
             }
             ae::Param::Color(mut co) => {

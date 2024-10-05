@@ -1,3 +1,5 @@
+use tweak_shader::TextureDesc;
+
 use super::*;
 
 // Runs the user shader, copying the results from the GPU to RAM.
@@ -48,15 +50,17 @@ pub fn render(
         });
 
         for (name, layer) in layer_iter {
-            ctx.load_image_immediate(
+            ctx.load_texture(
                 name,
-                layer.height() as u32,
-                layer.width() as u32,
-                layer.buffer_stride() as u32,
+                TextureDesc {
+                    width: layer.width() as u32,
+                    height: layer.height() as u32,
+                    stride: Some(layer.buffer_stride() as u32),
+                    data: layer.buffer(),
+                    format: *fmt,
+                },
                 &global.device,
                 &global.queue,
-                fmt,
-                layer.buffer(),
             );
         }
 
@@ -114,7 +118,11 @@ pub fn load_parameters(
         match param.as_param_mut()? {
             Param::CheckBox(cb) => {
                 if let Some(boolean) = input.as_bool() {
-                    boolean.current = if cb.value() { 1 } else { 0 };
+                    boolean.current = if cb.value() {
+                        tweak_shader::input_type::ShaderBool::True
+                    } else {
+                        tweak_shader::input_type::ShaderBool::False
+                    };
                 }
             }
             Param::Color(co) => {
