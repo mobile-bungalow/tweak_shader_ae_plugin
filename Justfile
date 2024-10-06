@@ -46,7 +46,7 @@ create_bundle BuildType TargetDir CertType BuildFlags:
     /usr/libexec/PlistBuddy -c 'add CFBundleSignature string FXTC' {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/Info.plist
     /usr/libexec/PlistBuddy -c 'add CFBundleIdentifier string {{BundleIdentifier}}' {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/Info.plist
 
-    cp {{TargetDir}}/{{BuildType}}/{{CrateName}}.rsrc {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/Resources/{{PluginName}}.rsrc
+    cp {{TargetDir}}/x86_64-apple-darwin/{{BuildType}}/{{CrateName}}.rsrc {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/Resources/{{PluginName}}.rsrc
 
     lipo {{TargetDir}}/{x86_64,aarch64}-apple-darwin/{{BuildType}}/lib{{CrateName}}.dylib -create -output {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/MacOS/{{BinaryName}}.dylib
     mv {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/MacOS/{{BinaryName}}.dylib {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/MacOS/{{PluginName}}
