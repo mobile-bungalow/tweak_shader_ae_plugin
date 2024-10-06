@@ -27,10 +27,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin, x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
       - name: Build and test
         run: |
           cargo install just
-          just build release
+          just release
       - name: Create artifact
         uses: actions/upload-artifact@v3
         with:
@@ -43,10 +44,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - name: Build and test
         run: |
           cargo install just
-          just build release
+          just release
       - name: Create artifact
         uses: actions/upload-artifact@v3
         with:
