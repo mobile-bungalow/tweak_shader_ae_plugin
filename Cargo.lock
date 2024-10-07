@@ -1589,18 +1589,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.61"
+version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c546c80d6be4bc6a00c0f01730c08df82eaa7a7a61f11d656526506112cc1709"
+checksum = "d50af8abc119fb8bb6dbabcfa89656f46f84aa0ac7688088608076ad2b459a84"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.61"
+version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46c3384250002a6d5af4d114f2845d37b57521033f30d5c3f46c4d70e1197533"
+checksum = "08904e7672f5eb876eaaf87e0ce17857500934f4981c4a0ab2b4aa98baac7fc3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1652,12 +1652,13 @@ dependencies = [
 
 [[package]]
 name = "tweak_shader"
-version = "0.3.3"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a883f02bb9cf3a439af31ee65a79ca035db3c182fafe69cb594960f30ecaf84"
+checksum = "47dec8ef7f3d72e9cdbfaf23556e8875de3fa0c05bb8d15a7f1cfc6a250a7c3f"
 dependencies = [
  "bytemuck",
  "nom",
+ "thiserror",
  "wgpu",
 ]
 

@@ -187,9 +187,10 @@ impl Default for TweakShaderGlobal {
         };
 
         let mut required_limits =
-            wgpu::Limits::downlevel_webgl2_defaults().using_resolution(adapter.limits());
+            wgpu::Limits::downlevel_defaults().using_resolution(adapter.limits());
 
         required_limits.max_push_constant_size = 256;
+        required_limits.max_storage_textures_per_shader_stage = 4;
 
         let maybe_dq = pollster::block_on(async {
             adapter
@@ -197,7 +198,8 @@ impl Default for TweakShaderGlobal {
                     &wgpu::DeviceDescriptor {
                         label: None,
                         required_features: wgpu::Features::PUSH_CONSTANTS
-                            | wgpu::Features::TEXTURE_FORMAT_16BIT_NORM,
+                            | wgpu::Features::TEXTURE_FORMAT_16BIT_NORM
+                            | wgpu::Features::VERTEX_WRITABLE_STORAGE,
                         required_limits,
                     },
                     None,
@@ -242,21 +244,25 @@ impl LocalInit {
     fn new(device: &Device, queue: &Queue, fmt: wgpu::TextureFormat, src: Option<String>) -> Self {
         let mut build_error = None;
 
-        let error_shader =
-            preprocessing::convert_output_to_ae_format(include_str!("./resources/error.fs"))
+        let ctx = src
+            .ok_or("No Source in initialization".to_owned())
+            .and_then(|src| preprocessing::convert_output_to_ae_format(&src))
+            .and_then(|src| {
+                tweak_shader::RenderContext::new(src, fmt, device, queue)
+                    .map_err(|e| format!("{e}"))
+            });
+
+        let ctx = match ctx {
+            Ok(okay) => okay,
+            Err(e) => {
+                let error_shader = preprocessing::convert_output_to_ae_format(include_str!(
+                    "./resources/error.fs"
+                ))
                 .unwrap();
 
-        let ctx = if let Some(src) = src {
-            let success = preprocessing::convert_output_to_ae_format(&src).unwrap();
-            match tweak_shader::RenderContext::new(success, fmt, device, queue) {
-                Ok(okay) => okay,
-                Err(e) => {
-                    build_error = Some(format!("{e}"));
-                    tweak_shader::RenderContext::new(&error_shader, fmt, device, queue).unwrap()
-                }
+                build_error = Some(format!("{e}"));
+                tweak_shader::RenderContext::new(&error_shader, fmt, device, queue).unwrap()
             }
-        } else {
-            tweak_shader::RenderContext::new(&error_shader, fmt, device, queue).unwrap()
         };
 
         let u16_converter = if fmt == wgpu::TextureFormat::Rgba16Float {

@@ -1,5 +1,8 @@
 use after_effects as ae;
-use tweak_shader::wgpu::{self, Device, Queue};
+use tweak_shader::{
+    wgpu::{self, Device, Queue},
+    TextureDesc,
+};
 
 // converts wgpu texture buffers from u15 to 32 float, and from float back to u16.
 // preprocessing handles converting to the right color space and swizzling.
@@ -67,28 +70,21 @@ impl U16ConversionContext {
             self.fp16_output_texture.as_ref().unwrap()
         };
 
+        let mut enc = device.create_command_encoder(&Default::default());
+
         main_render_ctx.render(
             queue,
             device,
-            &target_texture.create_view(&Default::default()),
+            &mut enc,
+            target_texture.create_view(&Default::default()),
             width,
             height,
         );
 
         // Update resolutions
-        self.fp_to_u16_ctx
-            .get_input_mut("height")
-            .unwrap()
-            .as_float()
-            .unwrap()
-            .current = height as f32;
+        *self.fp_to_u16_ctx.get_input_as("height").unwrap() = height as f32;
 
-        self.fp_to_u16_ctx
-            .get_input_mut("width")
-            .unwrap()
-            .as_float()
-            .unwrap()
-            .current = width as f32;
+        *self.fp_to_u16_ctx.get_input_as("width").unwrap() = width as f32;
 
         self.fp_to_u16_ctx
             .load_shared_texture(target_texture, "input_image");
@@ -131,15 +127,17 @@ impl U16ConversionContext {
                 self.fp_staging_textures.get(name).unwrap()
             };
 
-            self.u16_to_fp_ctx.load_image_immediate(
+            self.u16_to_fp_ctx.load_texture(
                 "input_image",
-                height,
-                width,
-                layer.row_bytes() as u32,
+                TextureDesc {
+                    width,
+                    height,
+                    stride: Some(layer.row_bytes().abs() as u32),
+                    data: layer.buffer(),
+                    format: wgpu::TextureFormat::Rgba16Unorm,
+                },
                 device,
                 queue,
-                &wgpu::TextureFormat::Rgba16Unorm,
-                layer.buffer(),
             );
 
             self.u16_to_fp_ctx
@@ -156,11 +154,11 @@ impl U16ConversionContext {
                 .unwrap()
                 .current = width as f32;
 
-            self.u16_to_fp_ctx.encode_render(
+            self.u16_to_fp_ctx.render(
                 queue,
                 device,
                 &mut render_encoder,
-                &texture.create_view(&Default::default()),
+                texture.create_view(&Default::default()),
                 width,
                 height,
             );
