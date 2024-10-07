@@ -94,12 +94,12 @@ impl VisitorMut for FormatSwizzler {
 
     fn visit_translation_unit(
         &mut self,
-        tu: &mut glsl::syntax::TranslationUnit,
+        translation_unit: &mut glsl::syntax::TranslationUnit,
     ) -> glsl::visitor::Visit {
         let mut exit_swiz = None;
 
-        for item in &mut tu.0 {
-            // Check for out vec4 to identify fragment shaders
+        for item in &mut translation_unit.0 {
+            // just check if we can get an "out vec4", that confirms this is a fragment shader.
             if let ExternalDeclaration::Declaration(Declaration::InitDeclaratorList(
                 InitDeclaratorList {
                     head:
@@ -133,7 +133,7 @@ impl VisitorMut for FormatSwizzler {
         }
 
         if let Some(mut swizzler) = exit_swiz {
-            for item in &mut tu.0 {
+            for item in &mut translation_unit.0 {
                 if let ExternalDeclaration::FunctionDefinition(glsl::syntax::FunctionDefinition {
                     prototype: FunctionPrototype { name, .. },
                     statement,
@@ -159,9 +159,11 @@ impl VisitorMut for FormatSwizzler {
     }
 }
 
-pub fn convert_output_to_ae_format(module: &str) -> Result<String, ()> {
+pub fn convert_output_to_ae_format(module: &str) -> Result<String, String> {
     let mut swiz = FormatSwizzler::new();
-    let mut expr = glsl::syntax::TranslationUnit::parse(module).unwrap();
+    let mut expr = glsl::syntax::TranslationUnit::parse(module)
+        .map_err(|e| format!("failed to mangle: {e}"))?;
+
     expr.visit_mut(&mut swiz);
 
     let mut output = String::new();

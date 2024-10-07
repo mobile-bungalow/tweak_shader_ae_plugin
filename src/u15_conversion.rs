@@ -82,19 +82,9 @@ impl U16ConversionContext {
         );
 
         // Update resolutions
-        self.fp_to_u16_ctx
-            .get_input_mut("height")
-            .unwrap()
-            .as_float()
-            .unwrap()
-            .current = height as f32;
+        *self.fp_to_u16_ctx.get_input_as("height").unwrap() = height as f32;
 
-        self.fp_to_u16_ctx
-            .get_input_mut("width")
-            .unwrap()
-            .as_float()
-            .unwrap()
-            .current = width as f32;
+        *self.fp_to_u16_ctx.get_input_as("width").unwrap() = width as f32;
 
         self.fp_to_u16_ctx
             .load_shared_texture(target_texture, "input_image");
