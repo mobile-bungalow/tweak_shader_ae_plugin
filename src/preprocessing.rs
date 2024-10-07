@@ -7,7 +7,7 @@ use glsl::syntax::{
 use glsl::visitor::HostMut;
 use glsl::visitor::VisitorMut;
 
-const TEXTURE_SAMPLING_FUNCTIONS: [&str; 7] = [
+const TEXTURE_SAMPLING_FUNCTIONS: [&str; 10] = [
     "texture",
     "textureOffset",
     "textureProj",
@@ -15,21 +15,24 @@ const TEXTURE_SAMPLING_FUNCTIONS: [&str; 7] = [
     "textureLod",
     "textureLodOffset",
     "textureGrad",
+    "textureGradOffset",
+    "texelFetch",
+    "texelGather",
 ];
 
-struct EntryPointExitSwizzler {
+const IMAGE_STORE_FUNCTION: [&str; 1] = ["imageStore"];
+
+struct ExitSwizzler {
     pub out_var: String,
 }
 
-// identify the end of the top level block, and find every block that ends in return;
-// inserting a swizzle statement at the end of it.
-impl EntryPointExitSwizzler {
+impl ExitSwizzler {
     pub fn new(out_var: String) -> Self {
         Self { out_var }
     }
 }
 
-impl VisitorMut for EntryPointExitSwizzler {
+impl VisitorMut for ExitSwizzler {
     fn visit_compound_statement(
         &mut self,
         block: &mut glsl::syntax::CompoundStatement,
@@ -57,27 +60,30 @@ impl VisitorMut for EntryPointExitSwizzler {
     }
 }
 
-struct FormatSwizzler {}
+struct FormatSwizzler;
 
 impl FormatSwizzler {
     pub fn new() -> Self {
-        Self {}
+        Self
     }
 }
 
 impl VisitorMut for FormatSwizzler {
     fn visit_expr(&mut self, e: &mut Expr) -> glsl::visitor::Visit {
         if let Expr::FunCall(id, args) = e {
-            for expr in args.iter_mut() {
-                expr.visit_mut(self);
-            }
-
             let mut string = String::new();
             glsl::transpiler::glsl::show_function_identifier(&mut string, id);
+
             if TEXTURE_SAMPLING_FUNCTIONS.contains(&string.as_str()) {
                 let clone = e.clone();
                 let swizzed = Expr::Dot(clone.into(), glsl::syntax::Identifier("gbar".into()));
                 *e = swizzed;
+            } else if IMAGE_STORE_FUNCTION.contains(&string.as_str()) {
+                if let Some(last_arg) = args.last_mut() {
+                    let clone = last_arg.clone();
+                    let swizzed = Expr::Dot(clone.into(), glsl::syntax::Identifier("argb".into()));
+                    *last_arg = swizzed;
+                }
             }
 
             return glsl::visitor::Visit::Parent;
@@ -90,16 +96,10 @@ impl VisitorMut for FormatSwizzler {
         &mut self,
         tu: &mut glsl::syntax::TranslationUnit,
     ) -> glsl::visitor::Visit {
-        // add the swizzle to the end of the compound statement.
-        // changing the output variable to argb;
-
-        // then implement the return point checker, which goes through every block in the
-        // funcition def compound statement and inserts the swizzle before each return statement;
-
         let mut exit_swiz = None;
 
         for item in &mut tu.0 {
-            // 'ello Giza - just check if we can get an "out vec4"
+            // Check for out vec4 to identify fragment shaders
             if let ExternalDeclaration::Declaration(Declaration::InitDeclaratorList(
                 InitDeclaratorList {
                     head:
@@ -126,7 +126,7 @@ impl VisitorMut for FormatSwizzler {
                 )) {
                     let mut string = String::new();
                     glsl::transpiler::glsl::show_identifier(&mut string, name);
-                    exit_swiz = Some(EntryPointExitSwizzler::new(string));
+                    exit_swiz = Some(ExitSwizzler::new(string));
                     break;
                 }
             }

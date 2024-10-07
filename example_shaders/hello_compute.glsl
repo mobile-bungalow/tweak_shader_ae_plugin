@@ -3,8 +3,12 @@
 #pragma stage(compute)
 
 #pragma input(float, name=blue, default=0.0, min=0.0, max=1.0)
-layout(set = 1, binding = 0) uniform custom_inputs {
+#pragma input(float, name=green, default=0.0, min=0.0, max=1.0)
+#pragma input(float, name=red, default=0.0, min=0.0, max=1.0)
+layout(push_constant) uniform custom_inputs {
     float blue;
+    float red;
+    float green;
 };
 
 #pragma target(name="output_image", screen)
@@ -21,5 +25,7 @@ void main() {
     // so use texelfetch.
     vec4 col = texelFetch(input_image, pixel_coords, 0);
     col.b *= blue;
+    col.r *= red;
+    col.g *= green;
     imageStore(output_image, pixel_coords, col);
 }
