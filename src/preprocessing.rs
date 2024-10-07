@@ -88,7 +88,7 @@ impl VisitorMut for FormatSwizzler {
 
     fn visit_translation_unit(
         &mut self,
-        tu: &mut glsl::syntax::TranslationUnit,
+        translation_unit: &mut glsl::syntax::TranslationUnit,
     ) -> glsl::visitor::Visit {
         // add the swizzle to the end of the compound statement.
         // changing the output variable to argb;
@@ -98,8 +98,8 @@ impl VisitorMut for FormatSwizzler {
 
         let mut exit_swiz = None;
 
-        for item in &mut tu.0 {
-            // 'ello Giza - just check if we can get an "out vec4"
+        for item in &mut translation_unit.0 {
+            // just check if we can get an "out vec4", that confirms this is a fragment shader.
             if let ExternalDeclaration::Declaration(Declaration::InitDeclaratorList(
                 InitDeclaratorList {
                     head:
@@ -133,7 +133,7 @@ impl VisitorMut for FormatSwizzler {
         }
 
         if let Some(mut swizzler) = exit_swiz {
-            for item in &mut tu.0 {
+            for item in &mut translation_unit.0 {
                 if let ExternalDeclaration::FunctionDefinition(glsl::syntax::FunctionDefinition {
                     prototype: FunctionPrototype { name, .. },
                     statement,

@@ -244,21 +244,20 @@ impl LocalInit {
     fn new(device: &Device, queue: &Queue, fmt: wgpu::TextureFormat, src: Option<String>) -> Self {
         let mut build_error = None;
 
-        let error_shader =
-            preprocessing::convert_output_to_ae_format(include_str!("./resources/error.fs"))
+        let ctx = src
+            .and_then(|src| preprocessing::convert_output_to_ae_format(&src).ok())
+            .ok_or(|src| tweak_shader::RenderContext::new(src, fmt, device, queue));
+        let ctx = match ctx {
+            Ok(okay) => okay,
+            Err(e) => {
+                let error_shader = preprocessing::convert_output_to_ae_format(include_str!(
+                    "./resources/error.fs"
+                ))
                 .unwrap();
 
-        let ctx = if let Some(src) = src {
-            let success = preprocessing::convert_output_to_ae_format(&src).unwrap();
-            match tweak_shader::RenderContext::new(success, fmt, device, queue) {
-                Ok(okay) => okay,
-                Err(e) => {
-                    build_error = Some(format!("{e}"));
-                    tweak_shader::RenderContext::new(&error_shader, fmt, device, queue).unwrap()
-                }
+                build_error = Some(format!("{e}"));
+                tweak_shader::RenderContext::new(&error_shader, fmt, device, queue).unwrap()
             }
-        } else {
-            tweak_shader::RenderContext::new(&error_shader, fmt, device, queue).unwrap()
         };
 
         let u16_converter = if fmt == wgpu::TextureFormat::Rgba16Float {
