@@ -245,8 +245,13 @@ impl LocalInit {
         let mut build_error = None;
 
         let ctx = src
-            .and_then(|src| preprocessing::convert_output_to_ae_format(&src).ok())
-            .ok_or(|src| tweak_shader::RenderContext::new(src, fmt, device, queue));
+            .ok_or("No Source in initialization".to_owned())
+            .and_then(|src| preprocessing::convert_output_to_ae_format(&src))
+            .and_then(|src| {
+                tweak_shader::RenderContext::new(src, fmt, device, queue)
+                    .map_err(|e| format!("{e}"))
+            });
+
         let ctx = match ctx {
             Ok(okay) => okay,
             Err(e) => {

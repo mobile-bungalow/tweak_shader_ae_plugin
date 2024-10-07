@@ -159,9 +159,11 @@ impl VisitorMut for FormatSwizzler {
     }
 }
 
-pub fn convert_output_to_ae_format(module: &str) -> Result<String, ()> {
+pub fn convert_output_to_ae_format(module: &str) -> Result<String, String> {
     let mut swiz = FormatSwizzler::new();
-    let mut expr = glsl::syntax::TranslationUnit::parse(module).unwrap();
+    let mut expr = glsl::syntax::TranslationUnit::parse(module)
+        .map_err(|e| format!("failed to mangle: {e}"))?;
+
     expr.visit_mut(&mut swiz);
 
     let mut output = String::new();
