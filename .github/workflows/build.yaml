@@ -32,11 +32,17 @@ jobs:
         run: |
           cargo install just
           just release
-      - name: Create artifact
+
+      - name: Zip plugin bundle
+        run: |
+          cd target/release
+          zip -r TweakShader.plugin.zip TweakShader.plugin
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-build
-          path: target/release/TweakShader.plugin
+          name: macos-build-universal
+          path: target/release/TweakShader.plugin.zip
           if-no-files-found: error
 
   build_win:
