@@ -142,7 +142,7 @@ impl U16ConversionContext {
                 TextureDesc {
                     width,
                     height,
-                    stride: Some(layer.row_bytes().abs() as u32),
+                    stride: Some(layer.row_bytes().unsigned_abs() as u32),
                     data: layer.buffer(),
                     format: wgpu::TextureFormat::Rgba16Unorm,
                 },
