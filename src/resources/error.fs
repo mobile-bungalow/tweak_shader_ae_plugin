@@ -1,4 +1,3 @@
-#version 450
 
 #pragma utility_block(ShaderInputs)
 layout(set = 0, binding = 0) uniform ShaderInputs {
@@ -12,7 +11,7 @@ layout(set = 0, binding = 0) uniform ShaderInputs {
     uint pass_index; // updated to reflect render pass
 };
 
-layout(location = 0) out vec4 out_color; 
+layout(location = 0) out vec4 out_color;
 
 const float TAU = 6.283185307179586;
 const float aRatio = 4.0 / 3.0;

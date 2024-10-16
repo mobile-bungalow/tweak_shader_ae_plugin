@@ -198,6 +198,7 @@ impl Default for TweakShaderGlobal {
                         label: None,
                         required_features: wgpu::Features::PUSH_CONSTANTS
                             | wgpu::Features::TEXTURE_FORMAT_16BIT_NORM
+                            | wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
                             | wgpu::Features::VERTEX_WRITABLE_STORAGE,
                         required_limits,
                     },

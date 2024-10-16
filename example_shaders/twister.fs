@@ -1,5 +1,3 @@
-#version 450
-#pragma tweak_shader(version=1.0)
 
 // Original art by tsone. https://www.shadertoy.com/user/tsone
 
@@ -37,7 +35,7 @@ layout(set = 1, binding = 1) uniform CustomInput {
   vec4  albedo;
 };
 
-layout(location = 0) out vec4 out_color; 
+layout(location = 0) out vec4 out_color;
 
 #define PI 3.14159265359
 

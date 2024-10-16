@@ -22,14 +22,14 @@ impl U16ConversionContext {
     pub fn new(device: &Device, queue: &Queue) -> Self {
         Self {
             u16_to_fp_ctx: tweak_shader::RenderContext::new(
-                include_str!("./resources/to_fp.fs"),
+                include_str!("./resources/to_fp.glsl"),
                 wgpu::TextureFormat::Rgba16Float,
                 device,
                 queue,
             )
             .expect("fp conversion conext broken"),
             fp_to_u16_ctx: tweak_shader::RenderContext::new(
-                include_str!("./resources/to_u15.fs"),
+                include_str!("./resources/to_u15.glsl"),
                 wgpu::TextureFormat::Rgba16Uint,
                 device,
                 queue,
@@ -40,6 +40,10 @@ impl U16ConversionContext {
         }
     }
 
+    // User shaders assume floating point, but in wgpu
+    // u16 shaders require uvec4 output. we need an additional
+    // pass to get everything into the right format such
+    // that the user doesn't have to be concerned.
     pub fn render_u15_to_cpu_buffer(
         &mut self,
         out_layer: &mut ae::Layer,
@@ -66,8 +70,7 @@ impl U16ConversionContext {
                 height,
                 wgpu::TextureFormat::Rgba16Float,
             ));
-            self.fp16_output_texture = Some(new_tex);
-            self.fp16_output_texture.as_ref().unwrap()
+            self.fp16_output_texture.insert(new_tex)
         };
 
         let mut enc = device.create_command_encoder(&Default::default());
@@ -81,10 +84,7 @@ impl U16ConversionContext {
             height,
         );
 
-        // Update resolutions
-        *self.fp_to_u16_ctx.get_input_as("height").unwrap() = height as f32;
-
-        *self.fp_to_u16_ctx.get_input_as("width").unwrap() = width as f32;
+        queue.submit([enc.finish()]);
 
         self.fp_to_u16_ctx
             .load_shared_texture(target_texture, "input_image");
@@ -132,27 +132,13 @@ impl U16ConversionContext {
                 TextureDesc {
                     width,
                     height,
-                    stride: Some(layer.row_bytes().unsigned_abs() as u32),
+                    stride: Some(layer.buffer_stride() as u32),
                     data: layer.buffer(),
                     format: wgpu::TextureFormat::Rgba16Unorm,
                 },
                 device,
                 queue,
             );
-
-            self.u16_to_fp_ctx
-                .get_input_mut("height")
-                .unwrap()
-                .as_float()
-                .unwrap()
-                .current = height as f32;
-
-            self.u16_to_fp_ctx
-                .get_input_mut("width")
-                .unwrap()
-                .as_float()
-                .unwrap()
-                .current = width as f32;
 
             self.u16_to_fp_ctx.render(
                 queue,
@@ -186,6 +172,7 @@ fn target_desc(
         usage: wgpu::TextureUsages::COPY_DST
             | wgpu::TextureUsages::TEXTURE_BINDING
             | wgpu::TextureUsages::RENDER_ATTACHMENT
+            | wgpu::TextureUsages::STORAGE_BINDING
             | wgpu::TextureUsages::COPY_SRC,
         view_formats: &[],
     }

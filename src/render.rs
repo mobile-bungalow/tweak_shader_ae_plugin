@@ -26,29 +26,19 @@ pub fn render(
 
     let cb = extra.callbacks();
 
-    if let Some(converter) = u16_converter {
-        let layer_iter = layers.iter().filter_map(|(name, index)| {
-            Some((
-                name.as_str(),
-                cb.checkout_layer_pixels(index.idx() as u32).ok()?,
-            ))
-        });
+    let layer_iter = layers.iter().filter_map(|(name, index)| {
+        Some((
+            name.as_str(),
+            cb.checkout_layer_pixels(index.idx() as u32).ok()?,
+        ))
+    });
 
+    if let Some(converter) = u16_converter {
         converter.prepare_cpu_layer_inputs(&global.device, &global.queue, layer_iter);
         let mut out_layer = cb.checkout_output()?;
-        let bpp = out_layer.bit_depth() / 2;
-        let width = (out_layer.row_bytes()) / bpp as isize;
-        ctx.update_resolution([width as f32, out_layer.height() as f32]);
-
+        ctx.update_resolution([out_layer.width() as f32, out_layer.height() as f32]);
         converter.render_u15_to_cpu_buffer(&mut out_layer, &global.device, &global.queue, ctx);
     } else {
-        let layer_iter = layers.iter().filter_map(|(name, index)| {
-            Some((
-                name.as_str(),
-                cb.checkout_layer_pixels(index.idx() as u32).ok()?,
-            ))
-        });
-
         for (name, layer) in layer_iter {
             ctx.load_texture(
                 name,
@@ -66,8 +56,8 @@ pub fn render(
 
         let mut out_layer = cb.checkout_output()?;
         let stride = out_layer.buffer_stride();
-        ctx.update_resolution([out_layer.width() as f32, out_layer.height() as f32]);
 
+        ctx.update_resolution([out_layer.width() as f32, out_layer.height() as f32]);
         ctx.render_to_slice(
             &global.queue,
             &global.device,

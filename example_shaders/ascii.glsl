@@ -1,5 +1,3 @@
-#version 450
-
 // Original Shader by movAX13h, https://www.shadertoy.com/user/movAX13h
 // Used unattributed by VidVox.
 
