@@ -1625,6 +1625,7 @@ dependencies = [
  "pipl",
  "pollster",
  "pretty-hex",
+ "raw-window-handle 0.5.2",
  "rfd",
  "serde",
  "serde_json",

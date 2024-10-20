@@ -1,4 +1,6 @@
 use crate::{preprocessing, u15_conversion::*};
+use after_effects as ae;
+use raw_window_handle::{RawWindowHandle, WindowHandle};
 use serde::{Deserialize, Serialize};
 use tweak_shader::wgpu::{self, Device, Queue};
 
@@ -325,7 +327,22 @@ impl Local {
             _ => "/".into(),
         };
 
-        let file = rfd::FileDialog::new()
+        let mut dialog = rfd::FileDialog::new();
+
+        if cfg!(target_os = "windows") {
+            let suite = ae::aegp::suites::Utility::new().ok()?;
+
+            let win = suite.main_hwnd().ok()?;
+            let mut parent = raw_window_handle::WinRtWindowHandle::empty();
+
+            parent.core_window = win;
+            let active = raw_window_handle::ActiveHandle::new();
+            let wh = unsafe { WindowHandle::borrow_raw(parent.into(), active) };
+
+            dialog = dialog.set_parent(&wh);
+        };
+
+        let file = dialog
             .add_filter("shader", &["glsl", "fs", "vs", "frag"])
             .set_directory(home_dir)
             .pick_file();

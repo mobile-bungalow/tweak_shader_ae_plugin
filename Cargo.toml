@@ -22,6 +22,7 @@ log-panics = "2.1"
 pollster = "0.3.0"
 rfd = "0.12.1"
 homedir = "0.2.1"
+raw-window-handle = "0.5.2"
 
 [build-dependencies]
 pipl = { git = "https://github.com/AdrianEddy/after-effects.git" }
