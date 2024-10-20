@@ -10,7 +10,6 @@ pub struct WindowAndDisplayHandle {
 
 impl WindowAndDisplayHandle {
     /// Safety: The window handle must be valid for however long you intend to use it for
-
     pub fn try_get_main_handles() -> Result<Self, Error> {
         let suite = after_effects::aegp::suites::Utility::new()?;
         let win = suite.main_hwnd()?;
