@@ -1,4 +1,4 @@
-use crate::{preprocessing, u15_conversion::*};
+use crate::{preprocessing, u15_conversion::*, window_handle::WindowAndDisplayHandle};
 use serde::{Deserialize, Serialize};
 use tweak_shader::wgpu::{self, Device, Queue};
 
@@ -325,7 +325,14 @@ impl Local {
             _ => "/".into(),
         };
 
-        let file = rfd::FileDialog::new()
+        let mut dialog = rfd::FileDialog::new();
+
+        if cfg!(target_os = "windows") {
+            let parent = WindowAndDisplayHandle::try_get_main_handles().ok()?;
+            dialog = dialog.set_parent(&parent);
+        }
+
+        let file = dialog
             .add_filter("shader", &["glsl", "fs", "vs", "frag"])
             .set_directory(home_dir)
             .pick_file();

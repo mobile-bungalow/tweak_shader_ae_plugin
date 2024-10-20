@@ -2,6 +2,7 @@ mod param_util;
 mod preprocessing;
 mod render;
 mod types;
+mod window_handle;
 
 mod u15_conversion;
 use ae::*;

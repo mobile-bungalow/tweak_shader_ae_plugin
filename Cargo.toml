@@ -20,8 +20,9 @@ pretty-hex = "0.4"
 win_dbg_logger = "0.1"
 log-panics = "2.1"
 pollster = "0.3.0"
-rfd = "0.12.1"
+rfd = "0.15.0"
 homedir = "0.2.1"
+raw-window-handle = "0.6.2"
 
 [build-dependencies]
 pipl = { git = "https://github.com/AdrianEddy/after-effects.git" }
