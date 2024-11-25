@@ -1221,8 +1221,8 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "pipl"
-version = "0.1.0"
-source = "git+https://github.com/AdrianEddy/after-effects.git#ac731059f538e782cc4feeb80689826ac698b19f"
+version = "0.1.1"
+source = "git+https://github.com/virtualritz/after-effects#9cf784ef8878115d9252de6ed308d41d625988ff"
 dependencies = [
  "bitflags 2.6.0",
  "byteorder",

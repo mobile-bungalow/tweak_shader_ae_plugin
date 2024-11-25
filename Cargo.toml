@@ -7,8 +7,8 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-after-effects = { git = "https://github.com/virtualritz/after-effects", commit = "7f666ce" }
-after-effects-sys = "0.2"
+after-effects = { git = "https://github.com/virtualritz/after-effects", commit = "9cf784e" }
+after-effects-sys = "0.2.1"
 env_logger = "0.11.3"
 glsl = { version = "7.0.0", default-features = false }
 tweak_shader = "0.4.0"
@@ -24,4 +24,4 @@ rfd = "0.12.1"
 homedir = "0.2.1"
 
 [build-dependencies]
-pipl = { git = "https://github.com/AdrianEddy/after-effects.git" }
+pipl = { git = "https://github.com/virtualritz/after-effects.git" }

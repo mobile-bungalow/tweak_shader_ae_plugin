@@ -29,13 +29,17 @@ pub fn render(
     let layer_iter = layers.iter().filter_map(|(name, index)| {
         Some((
             name.as_str(),
-            cb.checkout_layer_pixels(index.idx() as u32).ok()?,
+            cb.checkout_layer_pixels(index.idx() as u32).ok()??,
         ))
     });
 
     if let Some(converter) = u16_converter {
         converter.prepare_cpu_layer_inputs(&global.device, &global.queue, layer_iter);
-        let mut out_layer = cb.checkout_output()?;
+
+        let Some(mut out_layer) = cb.checkout_output()? else {
+            return Ok(());
+        };
+
         ctx.update_resolution([out_layer.width() as f32, out_layer.height() as f32]);
         converter.render_u15_to_cpu_buffer(&mut out_layer, &global.device, &global.queue, ctx);
     } else {
@@ -54,7 +58,10 @@ pub fn render(
             );
         }
 
-        let mut out_layer = cb.checkout_output()?;
+        let Some(mut out_layer) = cb.checkout_output()? else {
+            return Ok(());
+        };
+
         let stride = out_layer.buffer_stride();
 
         ctx.update_resolution([out_layer.width() as f32, out_layer.height() as f32]);
