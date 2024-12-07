@@ -44,6 +44,7 @@ pub fn render(
         converter.render_u15_to_cpu_buffer(&mut out_layer, &global.device, &global.queue, ctx);
     } else {
         for (name, layer) in layer_iter {
+            let real_fmt = layer.pixel_format().map(types::try_into)?.unwrap_or(*fmt);
             ctx.load_texture(
                 name,
                 TextureDesc {
@@ -51,7 +52,7 @@ pub fn render(
                     height: layer.height() as u32,
                     stride: Some(layer.buffer_stride() as u32),
                     data: layer.buffer(),
-                    format: *fmt,
+                    format: real_fmt,
                 },
                 &global.device,
                 &global.queue,

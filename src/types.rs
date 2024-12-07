@@ -1,4 +1,5 @@
 use crate::{preprocessing, u15_conversion::*};
+use after_effects::PixelFormat;
 use serde::{Deserialize, Serialize};
 use tweak_shader::wgpu::{self, Device, Queue};
 
@@ -78,11 +79,12 @@ impl From<TweakError> for super::Error {
 impl std::error::Error for TweakError {}
 
 #[derive(Debug, Copy, Clone)]
+#[repr(i16)]
 pub enum BitDepth {
     U8 = 8,
     U16 = 16,
     F32 = 32,
-    Invalid,
+    Invalid(i16),
 }
 
 impl From<i16> for BitDepth {
@@ -91,18 +93,35 @@ impl From<i16> for BitDepth {
             8 => BitDepth::U8,
             16 => BitDepth::U16,
             32 => BitDepth::F32,
-            _ => BitDepth::Invalid,
+            v => BitDepth::Invalid(v),
         }
     }
 }
 
-impl From<BitDepth> for wgpu::TextureFormat {
-    fn from(value: BitDepth) -> Self {
+#[derive(Debug)]
+pub enum PixelFormatConversionError {
+    InvalidFormat,
+}
+
+pub fn try_into(value: PixelFormat) -> Result<wgpu::TextureFormat, PixelFormatConversionError> {
+    match value {
+        after_effects::PixelFormat::Argb32 => Ok(wgpu::TextureFormat::Rgba8Unorm),
+        after_effects::PixelFormat::Argb64 => Ok(wgpu::TextureFormat::Rgba16Float),
+        after_effects::PixelFormat::Argb128 => Ok(wgpu::TextureFormat::Rgba32Float),
+        after_effects::PixelFormat::Bgra32 => Ok(wgpu::TextureFormat::Bgra8Unorm),
+        // Invalid format
+        _ => Err(PixelFormatConversionError::InvalidFormat),
+    }
+}
+
+impl TryFrom<BitDepth> for wgpu::TextureFormat {
+    type Error = i16;
+    fn try_from(value: BitDepth) -> Result<wgpu::TextureFormat, Self::Error> {
         match value {
-            BitDepth::U8 => wgpu::TextureFormat::Rgba8Unorm,
-            BitDepth::U16 => wgpu::TextureFormat::Rgba16Float,
-            BitDepth::F32 => wgpu::TextureFormat::Rgba32Float,
-            BitDepth::Invalid => unreachable!("invalid BPC"),
+            BitDepth::U8 => Ok(wgpu::TextureFormat::Rgba8Unorm),
+            BitDepth::U16 => Ok(wgpu::TextureFormat::Rgba16Float),
+            BitDepth::F32 => Ok(wgpu::TextureFormat::Rgba32Float),
+            BitDepth::Invalid(v) => Err(v),
         }
     }
 }
@@ -113,7 +132,7 @@ impl From<wgpu::TextureFormat> for BitDepth {
             wgpu::TextureFormat::Rgba8Unorm => BitDepth::U8,
             wgpu::TextureFormat::Rgba16Float => BitDepth::U16,
             wgpu::TextureFormat::Rgba32Float => BitDepth::F32,
-            _ => BitDepth::Invalid, // You may want to handle other cases as needed
+            _ => BitDepth::Invalid(-42), // You may want to handle other cases as needed
         }
     }
 }
@@ -260,7 +279,7 @@ impl LocalInit {
                 ))
                 .unwrap();
 
-                build_error = Some(format!("{e}"));
+                build_error = Some(e.to_string());
                 tweak_shader::RenderContext::new(&error_shader, fmt, device, queue).unwrap()
             }
         };
@@ -295,9 +314,11 @@ impl LocalInit {
 
 impl Local {
     pub fn init_or_update(&mut self, device: &Device, queue: &Queue, bit_depth: BitDepth) {
-        let expected_fmt: wgpu::TextureFormat = bit_depth.into();
         match self.local_init {
             None => {
+                let expected_fmt: wgpu::TextureFormat = bit_depth
+                    .try_into()
+                    .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
                 self.local_init = Some(LocalInit::new(
                     device,
                     queue,
@@ -305,15 +326,18 @@ impl Local {
                     self.src.clone(),
                 ));
             }
-            Some(LocalInit { fmt, .. }) if fmt != expected_fmt => {
-                self.local_init = Some(LocalInit::new(
-                    device,
-                    queue,
-                    expected_fmt,
-                    self.src.clone(),
-                ));
+            Some(LocalInit { fmt, .. }) => {
+                if let Ok(expected_fmt) = bit_depth.try_into() {
+                    if fmt != expected_fmt {
+                        self.local_init = Some(LocalInit::new(
+                            device,
+                            queue,
+                            expected_fmt,
+                            self.src.clone(),
+                        ));
+                    }
+                }
             }
-            _ => {}
         }
     }
 

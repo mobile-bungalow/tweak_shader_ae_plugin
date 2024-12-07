@@ -22,7 +22,7 @@ release:
 
 [macos]
 build:
-    just -f {{justfile()}} create_bundle debug {{TargetDir}} 'Apple Development' ''
+    just -f {{justfile()}} create_bundle debug {{TargetDir}} 'Developer ID Application' ''
 
 [macos]
 release:
