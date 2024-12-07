@@ -5,7 +5,7 @@ mod types;
 mod window_handle;
 
 mod u15_conversion;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use ae::*;
 use after_effects as ae;
@@ -38,7 +38,7 @@ impl AdobePluginInstance for LocalMutex {
                 let mut out = Local::default();
                 out.local_init = None;
                 out.src = src;
-                Ok(Arc::new(Mutex::new(out)))
+                Ok(Mutex::new(out))
             }
             _ => Err(Error::Generic),
         }
