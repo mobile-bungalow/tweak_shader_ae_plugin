@@ -1,6 +1,7 @@
 use crate::{preprocessing, u15_conversion::*, window_handle::WindowAndDisplayHandle};
 use after_effects::PixelFormat;
 use serde::{Deserialize, Serialize};
+use std::sync::Mutex;
 use tweak_shader::wgpu::{self, Device, Queue};
 
 #[repr(u8)]
@@ -157,7 +158,7 @@ pub struct InnerGlobal {
     pub queue: Queue,
 }
 
-after_effects::define_cross_thread_type!(Local);
+pub type LocalMutex = Mutex<Local>;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Local {
@@ -250,12 +251,6 @@ impl Default for TweakShaderGlobal {
         }));
 
         TweakShaderGlobal::Init(InnerGlobal { device, queue })
-    }
-}
-
-impl Drop for TweakShaderGlobal {
-    fn drop(&mut self) {
-        CrossThreadLocal::clear_map();
     }
 }
 
