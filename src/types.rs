@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use crate::{preprocessing, u15_conversion::*, window_handle::WindowAndDisplayHandle};
 use after_effects::PixelFormat;
 use serde::{Deserialize, Serialize};
@@ -157,7 +159,7 @@ pub struct InnerGlobal {
     pub queue: Queue,
 }
 
-after_effects::define_cross_thread_type!(Local);
+pub type LocalMutex = Arc<Mutex<Local>>;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Local {
@@ -250,12 +252,6 @@ impl Default for TweakShaderGlobal {
         }));
 
         TweakShaderGlobal::Init(InnerGlobal { device, queue })
-    }
-}
-
-impl Drop for TweakShaderGlobal {
-    fn drop(&mut self) {
-        CrossThreadLocal::clear_map();
     }
 }
 

@@ -5,28 +5,40 @@ mod types;
 mod window_handle;
 
 mod u15_conversion;
+use std::sync::{Arc, Mutex};
+
 use ae::*;
 use after_effects as ae;
 use after_effects_sys as ae_sys;
 use types::*;
 
+const SERDE_ID: u16 = 1;
 const INPUT_LAYER_CHECKOUT_ID: ParamIdx = ParamIdx::Dynamic(240);
 static PLUGIN_ID: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
 
-ae::define_effect!(TweakShaderGlobal, CrossThreadLocal, ParamIdx);
+ae::define_effect!(TweakShaderGlobal, LocalMutex, ParamIdx);
 
-impl AdobePluginInstance for CrossThreadLocal {
+macro_rules! lock {
+    ( $mutex_arc:expr ) => {
+        $mutex_arc.lock().unwrap()
+    };
+}
+
+impl AdobePluginInstance for LocalMutex {
     fn flatten(&self) -> Result<(u16, Vec<u8>), Error> {
-        let out = bincode::serialize(&self).map_err(|_| Error::Generic)?;
-        Ok((1, out))
+        let out = bincode::serialize(&lock!(self).src).map_err(|_| Error::Generic)?;
+        Ok((SERDE_ID, out))
     }
 
     fn unflatten(version: u16, serialized: &[u8]) -> Result<Self, Error> {
         match version {
-            1 => {
-                let out: CrossThreadLocal =
+            SERDE_ID => {
+                let src: Option<String> =
                     bincode::deserialize(serialized).map_err(|_| Error::Generic)?;
-                Ok(out)
+                let mut out = Local::default();
+                out.local_init = None;
+                out.src = src;
+                Ok(Arc::new(Mutex::new(out)))
             }
             _ => Err(Error::Generic),
         }
@@ -50,68 +62,59 @@ impl AdobePluginInstance for CrossThreadLocal {
                 out_data.set_return_msg("Tweak Shader, v2.0, The flexible shader plugin.")
             }
             Command::UpdateParamsUi => {
-                if let Some(local) = self.get() {
-                    let mut self_ = local.write();
-                    param_util::update_param_defaults_and_labels(plugin, &mut self_)?;
-                    param_util::update_param_ui(plugin, &mut self_)?;
-                }
+                param_util::update_param_defaults_and_labels(plugin, &mut lock!(self))?;
+                param_util::update_param_ui(plugin, &mut lock!(self))?;
             }
             Command::UserChangedParam { param_index } => {
                 match ParamIdx::from(param_index as u8) {
                     ParamIdx::UnloadButton => {
-                        if let Some(self_) = self.get() {
-                            let mut self_ = self_.write();
-                            self_.unload_scene();
-                            param_util::update_param_defaults_and_labels(plugin, &mut self_)?;
-                        }
+                        lock!(self).unload_scene();
+                        param_util::update_param_defaults_and_labels(plugin, &mut lock!(self))?;
                     }
                     ParamIdx::LoadButton => {
-                        if let Some(local) = self.get() {
-                            let mut self_ = local.write();
-                            let error_message = self_.launch_shader_selection_dialog(plugin.global);
-                            if let Some(err) = error_message {
-                                out_data.set_error_msg(&err);
-                            } else {
-                                param_util::update_param_defaults_and_labels(plugin, &mut self_)?;
-                            }
+                        let error_message =
+                            lock!(self).launch_shader_selection_dialog(plugin.global);
+                        if let Some(err) = error_message {
+                            out_data.set_error_msg(&err);
+                        } else {
+                            param_util::update_param_defaults_and_labels(plugin, &mut lock!(self))?;
                         }
                     }
                     ParamIdx::IsImageFilter => {
-                        if let Some(self_) = self.get() {
-                            let mut self_ = self_.write();
+                        if let Some(init) = lock!(self).local_init.as_mut() {
+                            init.queue_param_visibility_reset();
+                        }
 
-                            if let Some(init) = self_.local_init.as_mut() {
-                                init.queue_param_visibility_reset();
-                            }
+                        let is_image_filter = plugin
+                            .params
+                            .get(ParamIdx::IsImageFilter)?
+                            .as_checkbox()?
+                            .value();
 
-                            let is_image_filter = plugin
-                                .params
-                                .get(ParamIdx::IsImageFilter)?
-                                .as_checkbox()?
-                                .value();
-
-                            let first_image = self_.local_init.as_ref().and_then(|init| {
+                        let first_image = lock!(self)
+                            .local_init
+                            .as_ref()
+                            .and_then(|init| {
                                 init.ctx
                                     .iter_inputs()
                                     .enumerate()
                                     .find(|(_, (_, i))| i.is_stored_as_texture())
-                            });
+                                    .map(|(i, (_, ty))| param_util::as_param_index(i, ty))
+                            })
+                            .clone();
 
-                            if let Some((i, (_, ty))) = first_image {
-                                let index = param_util::as_param_index(i, ty);
-
-                                if is_image_filter {
-                                    let mut param = plugin.params.get_mut(index)?;
-                                    let mut layer = param.as_layer_mut()?;
-                                    layer.set_default_to_this_layer();
-                                }
-
-                                param_util::set_param_visibility(
-                                    plugin.in_data,
-                                    index,
-                                    !is_image_filter,
-                                )?;
+                        if let Some(index) = first_image {
+                            if is_image_filter {
+                                let mut param = plugin.params.get_mut(index)?;
+                                let mut layer = param.as_layer_mut()?;
+                                layer.set_default_to_this_layer();
                             }
+
+                            param_util::set_param_visibility(
+                                plugin.in_data,
+                                index,
+                                !is_image_filter,
+                            )?;
                         }
                     }
                     _ => {}
@@ -122,12 +125,9 @@ impl AdobePluginInstance for CrossThreadLocal {
                 let mut req = extra.output_request();
 
                 let cb = extra.callbacks();
-                let self_ = self.get();
 
-                if let (Some(local), Some(global)) = (self_, plugin.global.as_init()) {
-                    let mut local_data_mut = local.write();
-
-                    local_data_mut.init_or_update(
+                if let Some(global) = plugin.global.as_init() {
+                    lock!(self).init_or_update(
                         &global.device,
                         &global.queue,
                         extra.bit_depth().into(),
@@ -137,7 +137,7 @@ impl AdobePluginInstance for CrossThreadLocal {
                     let time_step = in_data.time_step();
                     let time_scale = in_data.time_scale();
 
-                    if let Some(LocalInit { ctx, .. }) = local_data_mut.local_init.as_ref() {
+                    if let Some(LocalInit { ctx, .. }) = lock!(self).local_init.as_ref() {
                         for (index, (_, v)) in ctx
                             .iter_inputs()
                             .enumerate()
@@ -187,20 +187,16 @@ impl AdobePluginInstance for CrossThreadLocal {
                 }
             }
             Command::SmartRender { extra } => {
-                if let Some(local) = self.get() {
-                    render::render(plugin, &mut local.write(), &extra)?;
-                }
+                render::render(plugin, &mut lock!(self), &extra)?;
             }
             Command::SequenceSetup => {
-                if let (Some(local), Some(global)) = (self.get(), plugin.global.as_init()) {
-                    let mut local_data_mut = local.write();
-                    local_data_mut.init_or_update(&global.device, &global.queue, BitDepth::U8);
+                if let Some(global) = plugin.global.as_init() {
+                    lock!(self).init_or_update(&global.device, &global.queue, BitDepth::U8);
                 }
             }
             Command::SequenceResetup => {
-                if let (Some(local), Some(global)) = (self.get(), plugin.global.as_init()) {
-                    let mut local_data_mut = local.write();
-                    local_data_mut.init_or_update(&global.device, &global.queue, BitDepth::U8);
+                if let Some(global) = plugin.global.as_init() {
+                    lock!(self).init_or_update(&global.device, &global.queue, BitDepth::U8);
                 }
             }
             _ => {}
