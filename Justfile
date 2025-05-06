@@ -27,6 +27,7 @@ build:
 [macos]
 release:
     just -f {{justfile()}} create_bundle release {{TargetDir}} 'Developer ID Application' --release
+    just -f {{justfile()}} notarize_and_staple release {{TargetDir}}
 
 [macos]
 create_bundle BuildType TargetDir CertType BuildFlags:
@@ -51,3 +52,11 @@ create_bundle BuildType TargetDir CertType BuildFlags:
     lipo {{TargetDir}}/{x86_64,aarch64}-apple-darwin/{{BuildType}}/lib{{CrateName}}.dylib -create -output {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/MacOS/{{BinaryName}}.dylib
     mv {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/MacOS/{{BinaryName}}.dylib {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin/Contents/MacOS/{{PluginName}}
     /usr/bin/codesign --force --options runtime --timestamp -s $( security find-identity -v -p codesigning | grep -m 1 "{{CertType}}" | awk -F ' ' '{print $2}' ) {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin
+
+[macos]
+notarize_and_staple BuildType TargetDir:
+    echo "Notarizing and stapling plugin bundle"
+    ditto -c -k --keepParent {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin {{TargetDir}}/{{BuildType}}/{{PluginName}}.zip
+    xcrun notarytool submit {{TargetDir}}/{{BuildType}}/{{PluginName}}.zip --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+    xcrun stapler staple {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin
+    echo "Notarization and stapling completed"
