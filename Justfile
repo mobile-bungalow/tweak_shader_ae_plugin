@@ -57,6 +57,6 @@ create_bundle BuildType TargetDir CertType BuildFlags:
 notarize_and_staple BuildType TargetDir:
     echo "Notarizing and stapling plugin bundle"
     ditto -c -k --keepParent {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin {{TargetDir}}/{{BuildType}}/{{PluginName}}.zip
-    xcrun notarytool submit {{TargetDir}}/{{BuildType}}/{{PluginName}}.zip --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+    xcrun notarytool submit {{TargetDir}}/{{BuildType}}/{{PluginName}}.zip --apple-id "${APPLE_ID}" --password "${APPLE_APP_PASSWORD}" --team-id "${APPLE_TEAM_ID}" --wait
     xcrun stapler staple {{TargetDir}}/{{BuildType}}/{{PluginName}}.plugin
     echo "Notarization and stapling completed"
