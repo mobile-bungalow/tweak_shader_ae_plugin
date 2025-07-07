@@ -10,9 +10,11 @@ This plugin is in early development: prepare for bugs and crashes, pull requests
 ---
 ### Testing shaders outside of after effects
 
-[I have written a web utility which allows you to run the shader format on compatible browsers.](https://mobile-bungalow.github.io/tweak_shader_web/)
+for ease of development: [you can develop on the web](https://mobile-bungalow.github.io/tweak_shader_web/)
 
 Currently it only works on chrome, and with limited features for supporting push constants and rw textures.
+
+---
 
 If you are experienced with  command line tools and rust - i have written [a utility](https://crates.io/crates/tweak_runner) outside of after effects to aid in writing shaders that are compatible with this plugin.
 
@@ -23,9 +25,6 @@ cargo install tweak_runner
 tweak_runner --file <shader file>
 ```
 
-<div align="center">
-    <img src="media/tr_screen.png" alt="Tweak Runner Screenshot" width="800">
-</div>
 
 ---
 ### Building The Plugin
