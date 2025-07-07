@@ -10,7 +10,7 @@ This plugin is in early development: prepare for bugs and crashes, pull requests
 ---
 ### Testing shaders outside of after effects
 
-[I have written a web utility which allowes you to run the shader format on compatible browsers.](https://mobile-bungalow.github.io/tweak_shader_web/)
+[I have written a web utility which allows you to run the shader format on compatible browsers.](https://mobile-bungalow.github.io/tweak_shader_web/)
 
 Currently it only works on chrome, and with limited features for supporting push constants and rw textures.
 
