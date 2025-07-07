@@ -10,13 +10,15 @@ This plugin is in early development: prepare for bugs and crashes, pull requests
 ---
 ### Testing shaders outside of after effects
 
-for ease of development: [you can develop on the web](https://mobile-bungalow.github.io/tweak_shader_web/)
+#### Web
 
-Currently it only works on chrome, and with limited features for supporting push constants and rw textures.
+I have written a [web based tool](https://mobile-bungalow.github.io/tweak_shader_web/) which allows users to write compatible shaders from the comfort of their browser.
 
----
+Currently it only works on chrome and other webgpu compatible browsers. Some features - such as push contants and read-write textures in compute shaders - are not available in the browser environment.
 
-If you are experienced with  command line tools and rust - i have written [a utility](https://crates.io/crates/tweak_runner) outside of after effects to aid in writing shaders that are compatible with this plugin.
+#### Desktop
+
+If you are experienced with  command line tools and rust - I have written [a command line utility](https://crates.io/crates/tweak_runner) outside of after effects to aid in writing shaders that are compatible with this plugin.
 
 to install it you must have a working installation of rust. Then compile, install, and execute it with
 
@@ -25,6 +27,7 @@ cargo install tweak_runner
 tweak_runner --file <shader file>
 ```
 
+This will spawn short lived desktop application which tracks live changes to the selected shader file.
 
 ---
 ### Building The Plugin
