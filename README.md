@@ -9,7 +9,12 @@ This plugin is in early development: prepare for bugs and crashes, pull requests
 
 ---
 ### Testing shaders outside of after effects
-I have written [a utility](https://crates.io/crates/tweak_runner) outside of after effects to aid in writing shaders that are compatible with this plugin.
+
+[I have written a web utility which allowes you to run the shader format on compatible browsers.](https://mobile-bungalow.github.io/tweak_shader_web/)
+
+Currently it only works on chrome, and with limited features for supporting push constants and rw textures.
+
+If you are experienced with  command line tools and rust - i have written [a utility](https://crates.io/crates/tweak_runner) outside of after effects to aid in writing shaders that are compatible with this plugin.
 
 to install it you must have a working installation of rust. Then compile, install, and execute it with
 
