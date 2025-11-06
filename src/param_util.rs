@@ -265,7 +265,7 @@ pub fn setup_static_params(params: &mut ae::Parameters<ParamIdx>) -> Result<(), 
         ParamIdx::ReloadButton,
         "Realod Source",
         ae::ButtonDef::setup(|f| {
-            f.set_label("Unload Source");
+            f.set_label("Resload Source");
         }),
         default_flags(),
         ae::ParamUIFlags::empty(),
