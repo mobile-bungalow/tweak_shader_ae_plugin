@@ -263,9 +263,9 @@ pub fn setup_static_params(params: &mut ae::Parameters<ParamIdx>) -> Result<(), 
 
     params.add_with_flags(
         ParamIdx::ReloadButton,
-        "Realod Source",
+        "Reload Source",
         ae::ButtonDef::setup(|f| {
-            f.set_label("Resload Source");
+            f.set_label("Reload Source");
         }),
         default_flags(),
         ae::ParamUIFlags::empty(),

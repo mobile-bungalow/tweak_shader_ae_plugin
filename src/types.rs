@@ -172,7 +172,7 @@ pub struct Local {
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub src: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub directory: Option<PathBuf>,
+    pub src_path: Option<PathBuf>,
 }
 
 #[derive(Debug)]
@@ -359,19 +359,24 @@ impl Local {
             dialog = dialog.set_parent(&parent);
         }
 
-        let last_known_dir = self.directory.clone();
+        // Use the parent directory of the last loaded file path
+        let last_known_dir = self
+            .src_path
+            .as_ref()
+            .and_then(|p| p.parent())
+            .map(|p| p.to_owned());
 
         let file = dialog
             .add_filter("shader", &["glsl", "fs", "vs", "frag"])
             .set_directory(last_known_dir.unwrap_or(home_dir))
             .pick_file();
 
-        let source_dir = file.as_ref().and_then(|f| f.parent()).map(|p| p.to_owned());
+        let source = file
+            .as_ref()
+            .map(|path| std::fs::read_to_string(path).unwrap_or_default());
 
-        let source = file.map(|path| std::fs::read_to_string(path).unwrap_or_default());
-
-        if let Some(source_dir) = source_dir {
-            self.directory = Some(source_dir);
+        if file.is_some() {
+            self.src_path = file;
         }
 
         let current_fmt = self
@@ -392,5 +397,37 @@ impl Local {
     pub fn unload_scene(&mut self) {
         self.src = None;
         self.local_init = None;
+    }
+
+    pub fn reload_last_path(&mut self, global: &TweakShaderGlobal) -> Option<String> {
+        let InnerGlobal { queue, device, .. } = global.as_init()?;
+
+        let src_path = self.src_path.as_ref()?;
+
+        if !src_path.exists() {
+            return Some(format!("Shader file not found: {}", src_path.display()));
+        }
+
+        let source = match std::fs::read_to_string(src_path) {
+            Ok(content) => Some(content),
+            Err(e) => {
+                return Some(format!("Failed to read shader file: {}", e));
+            }
+        };
+
+        let current_fmt = self
+            .local_init
+            .as_ref()
+            .map(|l| l.fmt)
+            .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
+
+        // Reload from the file
+        let mut local_init = LocalInit::new(device, queue, current_fmt, source.clone());
+        local_init.needs_param_setup = true;
+        let out = local_init.build_error.clone();
+
+        self.src = source;
+        self.local_init = Some(local_init);
+        out
     }
 }

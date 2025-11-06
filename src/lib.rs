@@ -81,13 +81,13 @@ impl AdobePluginInstance for LocalMutex {
                         }
                     }
                     ParamIdx::ReloadButton => {
-                        //let error_message = lock!(self).reload_last_path(plugin.global);
+                        let error_message = lock!(self).reload_last_path(plugin.global);
 
-                        //if let Some(err) = error_message {
-                        //    out_data.set_error_msg(&err);
-                        //} else {
-                        //    param_util::update_param_defaults_and_labels(plugin, &mut lock!(self))?;
-                        //}
+                        if let Some(err) = error_message {
+                            out_data.set_error_msg(&err);
+                        } else {
+                            param_util::update_param_defaults_and_labels(plugin, &mut lock!(self))?;
+                        }
                     }
                     ParamIdx::IsImageFilter => {
                         if let Some(init) = lock!(self).local_init.as_mut() {
