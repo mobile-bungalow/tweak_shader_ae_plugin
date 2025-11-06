@@ -402,7 +402,9 @@ impl Local {
     pub fn reload_last_path(&mut self, global: &TweakShaderGlobal) -> Option<String> {
         let InnerGlobal { queue, device, .. } = global.as_init()?;
 
-        let src_path = self.src_path.as_ref()?;
+        let Some(src_path) = self.src_path.as_ref() else {
+            return Some(format!("The source path was invalid"));
+        };
 
         if !src_path.exists() {
             return Some(format!("Shader file not found: {}", src_path.display()));
@@ -421,7 +423,6 @@ impl Local {
             .map(|l| l.fmt)
             .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
 
-        // Reload from the file
         let mut local_init = LocalInit::new(device, queue, current_fmt, source.clone());
         local_init.needs_param_setup = true;
         let out = local_init.build_error.clone();
