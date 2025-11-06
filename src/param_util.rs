@@ -178,10 +178,12 @@ pub fn update_param_ui(
         set_param_visibility(state.in_data, ParamIdx::LoadButton, true)?;
         set_param_visibility(state.in_data, ParamIdx::Time, false)?;
         set_param_visibility(state.in_data, ParamIdx::UnloadButton, false)?;
+        set_param_visibility(state.in_data, ParamIdx::ReloadButton, false)?;
         set_param_visibility(state.in_data, ParamIdx::IsImageFilter, false)?;
     } else {
         set_param_visibility(state.in_data, ParamIdx::LoadButton, false)?;
         set_param_visibility(state.in_data, ParamIdx::UnloadButton, true)?;
+        set_param_visibility(state.in_data, ParamIdx::ReloadButton, true)?;
         set_param_visibility(state.in_data, ParamIdx::UseLayerTime, true)?;
 
         if !state
@@ -252,6 +254,16 @@ pub fn setup_static_params(params: &mut ae::Parameters<ParamIdx>) -> Result<(), 
     params.add_with_flags(
         ParamIdx::UnloadButton,
         "Unload Source",
+        ae::ButtonDef::setup(|f| {
+            f.set_label("Unload Source");
+        }),
+        default_flags(),
+        ae::ParamUIFlags::empty(),
+    )?;
+
+    params.add_with_flags(
+        ParamIdx::ReloadButton,
+        "Realod Source",
         ae::ButtonDef::setup(|f| {
             f.set_label("Unload Source");
         }),

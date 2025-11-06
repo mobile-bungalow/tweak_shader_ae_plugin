@@ -1,7 +1,7 @@
 use crate::{preprocessing, u15_conversion::*, window_handle::WindowAndDisplayHandle};
 use after_effects::PixelFormat;
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
+use std::{path::PathBuf, sync::Mutex};
 use tweak_shader::wgpu::{self, Device, Queue};
 
 #[repr(u8)]
@@ -9,9 +9,10 @@ use tweak_shader::wgpu::{self, Device, Queue};
 pub enum ParamIdx {
     LoadButton = 1,
     UnloadButton = 2,
-    Time = 3,
-    IsImageFilter = 4,
-    UseLayerTime = 5,
+    ReloadButton = 3,
+    Time = 4,
+    IsImageFilter = 5,
+    UseLayerTime = 6,
     Dynamic(u8),
 }
 
@@ -22,9 +23,10 @@ impl ParamIdx {
         match self {
             ParamIdx::LoadButton => 1,
             ParamIdx::UnloadButton => 2,
-            ParamIdx::Time => 3,
-            ParamIdx::IsImageFilter => 4,
-            ParamIdx::UseLayerTime => 5,
+            ParamIdx::ReloadButton => 3,
+            ParamIdx::Time => 4,
+            ParamIdx::IsImageFilter => 5,
+            ParamIdx::UseLayerTime => 6,
             ParamIdx::Dynamic(x) => *x as i32,
         }
     }
@@ -35,9 +37,10 @@ impl From<u8> for ParamIdx {
         match value {
             1 => ParamIdx::LoadButton,
             2 => ParamIdx::UnloadButton,
-            3 => ParamIdx::Time,
-            4 => ParamIdx::IsImageFilter,
-            5 => ParamIdx::UseLayerTime,
+            3 => ParamIdx::ReloadButton,
+            4 => ParamIdx::Time,
+            5 => ParamIdx::IsImageFilter,
+            6 => ParamIdx::UseLayerTime,
             _ => ParamIdx::Dynamic(value),
         }
     }
@@ -48,9 +51,10 @@ impl From<ParamIdx> for u8 {
         match value {
             ParamIdx::LoadButton => 1,
             ParamIdx::UnloadButton => 2,
-            ParamIdx::Time => 3,
-            ParamIdx::IsImageFilter => 4,
-            ParamIdx::UseLayerTime => 5,
+            ParamIdx::ReloadButton => 3,
+            ParamIdx::Time => 4,
+            ParamIdx::IsImageFilter => 5,
+            ParamIdx::UseLayerTime => 6,
             ParamIdx::Dynamic(x) => x,
         }
     }
@@ -167,11 +171,14 @@ pub struct Local {
     pub local_init: Option<LocalInit>,
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub src: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub directory: Option<PathBuf>,
 }
 
 #[derive(Debug)]
 pub struct LocalInit {
     pub ctx: tweak_shader::RenderContext,
+    /// Location of the last laoded shader
     needs_param_setup: bool,
     pub fmt: wgpu::TextureFormat,
     pub build_error: Option<String>,
@@ -308,6 +315,7 @@ impl LocalInit {
 }
 
 impl Local {
+    /// Nop - unless the bitdepth has changed, in which case it rebuilds the shader and resources
     pub fn init_or_update(&mut self, device: &Device, queue: &Queue, bit_depth: BitDepth) {
         match self.local_init {
             None => {
@@ -351,21 +359,28 @@ impl Local {
             dialog = dialog.set_parent(&parent);
         }
 
+        let last_known_dir = self.directory.clone();
+
         let file = dialog
             .add_filter("shader", &["glsl", "fs", "vs", "frag"])
-            .set_directory(home_dir)
+            .set_directory(last_known_dir.unwrap_or(home_dir))
             .pick_file();
 
+        let source_dir = file.as_ref().and_then(|f| f.parent()).map(|p| p.to_owned());
+
         let source = file.map(|path| std::fs::read_to_string(path).unwrap_or_default());
-        let mut local_init = LocalInit::new(
-            device,
-            queue,
-            self.local_init
-                .as_ref()
-                .map(|l| l.fmt)
-                .unwrap_or(wgpu::TextureFormat::Rgba8Unorm),
-            source.clone(),
-        );
+
+        if let Some(source_dir) = source_dir {
+            self.directory = Some(source_dir);
+        }
+
+        let current_fmt = self
+            .local_init
+            .as_ref()
+            .map(|l| l.fmt)
+            .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
+
+        let mut local_init = LocalInit::new(device, queue, current_fmt, source.clone());
         local_init.needs_param_setup = true;
         let out = local_init.build_error.clone();
 
