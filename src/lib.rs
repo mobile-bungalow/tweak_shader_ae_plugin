@@ -12,7 +12,8 @@ use after_effects as ae;
 use after_effects_sys as ae_sys;
 use types::*;
 
-const SERDE_ID: u16 = 1;
+const SERDE_ID_V1: u16 = 1;
+const SERDE_ID: u16 = 2;
 const INPUT_LAYER_CHECKOUT_ID: ParamIdx = ParamIdx::Dynamic(240);
 static PLUGIN_ID: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
 
@@ -26,18 +27,30 @@ macro_rules! lock {
 
 impl AdobePluginInstance for LocalMutex {
     fn flatten(&self) -> Result<(u16, Vec<u8>), Error> {
-        let out = bincode::serialize(&lock!(self).src).map_err(|_| Error::Generic)?;
+        let locked = lock!(self);
+        let data = (&locked.src, &locked.src_path);
+        let out = bincode::serialize(&data).map_err(|_| Error::Generic)?;
         Ok((SERDE_ID, out))
     }
 
     fn unflatten(version: u16, serialized: &[u8]) -> Result<Self, Error> {
         match version {
             SERDE_ID => {
+                let (src, src_path): (Option<String>, Option<std::path::PathBuf>) =
+                    bincode::deserialize(serialized).map_err(|_| Error::Generic)?;
+                let mut out = Local::default();
+                out.local_init = None;
+                out.src = src;
+                out.src_path = src_path;
+                Ok(Mutex::new(out))
+            }
+            SERDE_ID_V1 => {
                 let src: Option<String> =
                     bincode::deserialize(serialized).map_err(|_| Error::Generic)?;
                 let mut out = Local::default();
                 out.local_init = None;
                 out.src = src;
+                out.src_path = None;
                 Ok(Mutex::new(out))
             }
             _ => Err(Error::Generic),
@@ -74,6 +87,15 @@ impl AdobePluginInstance for LocalMutex {
                     ParamIdx::LoadButton => {
                         let error_message =
                             lock!(self).launch_shader_selection_dialog(plugin.global);
+                        if let Some(err) = error_message {
+                            out_data.set_error_msg(&err);
+                        } else {
+                            param_util::update_param_defaults_and_labels(plugin, &mut lock!(self))?;
+                        }
+                    }
+                    ParamIdx::ReloadButton => {
+                        let error_message = lock!(self).reload_last_path(plugin.global);
+
                         if let Some(err) = error_message {
                             out_data.set_error_msg(&err);
                         } else {
