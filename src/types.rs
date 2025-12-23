@@ -1,5 +1,4 @@
 use crate::{preprocessing, u15_conversion::*, window_handle::WindowAndDisplayHandle};
-use after_effects::PixelFormat;
 use serde::{Deserialize, Serialize};
 use std::{path::PathBuf, sync::Mutex};
 use tweak_shader::wgpu::{self, Device, Queue};
@@ -103,22 +102,6 @@ impl From<i16> for BitDepth {
     }
 }
 
-#[derive(Debug)]
-pub enum PixelFormatConversionError {
-    InvalidFormat,
-}
-
-pub fn try_into(value: PixelFormat) -> Result<wgpu::TextureFormat, PixelFormatConversionError> {
-    match value {
-        after_effects::PixelFormat::Argb32 => Ok(wgpu::TextureFormat::Rgba8Unorm),
-        after_effects::PixelFormat::Argb64 => Ok(wgpu::TextureFormat::Rgba16Float),
-        after_effects::PixelFormat::Argb128 => Ok(wgpu::TextureFormat::Rgba32Float),
-        after_effects::PixelFormat::Bgra32 => Ok(wgpu::TextureFormat::Bgra8Unorm),
-        // Invalid format
-        _ => Err(PixelFormatConversionError::InvalidFormat),
-    }
-}
-
 impl TryFrom<BitDepth> for wgpu::TextureFormat {
     type Error = i16;
     fn try_from(value: BitDepth) -> Result<wgpu::TextureFormat, Self::Error> {
@@ -212,11 +195,15 @@ impl Default for TweakShaderGlobal {
             return Self::Uninit;
         };
 
-        let mut required_limits =
-            wgpu::Limits::downlevel_defaults().using_resolution(adapter.limits());
+        let adapter_limits = adapter.limits();
+        let mut required_limits = wgpu::Limits::default().using_resolution(adapter_limits.clone());
 
         required_limits.max_push_constant_size = 256;
         required_limits.max_storage_textures_per_shader_stage = 4;
+        required_limits.max_buffer_size = adapter_limits.max_buffer_size;
+        required_limits.max_storage_buffer_binding_size =
+            adapter_limits.max_storage_buffer_binding_size;
+        required_limits.max_texture_dimension_2d = adapter_limits.max_texture_dimension_2d;
 
         let maybe_dq = pollster::block_on(async {
             adapter

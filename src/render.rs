@@ -44,7 +44,7 @@ pub fn render(
         converter.render_u15_to_cpu_buffer(&mut out_layer, &global.device, &global.queue, ctx);
     } else {
         for (name, layer) in layer_iter {
-            let real_fmt = layer.pixel_format().map(types::try_into)?.unwrap_or(*fmt);
+            let real_fmt = *fmt;
             ctx.load_texture(
                 name,
                 TextureDesc {
@@ -63,16 +63,35 @@ pub fn render(
             return Ok(());
         };
 
-        let stride = out_layer.buffer_stride();
+        let width = out_layer.width() as u32;
+        let height = out_layer.height() as u32;
+        let stride = out_layer.buffer_stride() as u32;
 
-        ctx.update_resolution([out_layer.width() as f32, out_layer.height() as f32]);
+        let limits = global.device.limits();
+        let buffer_size = stride as u64 * height as u64;
+        if buffer_size > limits.max_buffer_size {
+            state.out_data.set_error_msg(&format!(
+                "Buffer size {} exceeds GPU max {}",
+                buffer_size, limits.max_buffer_size
+            ));
+            return Ok(());
+        }
+        if width > limits.max_texture_dimension_2d || height > limits.max_texture_dimension_2d {
+            state.out_data.set_error_msg(&format!(
+                "Texture {}x{} exceeds GPU max {}",
+                width, height, limits.max_texture_dimension_2d
+            ));
+            return Ok(());
+        }
+
+        ctx.update_resolution([width as f32, height as f32]);
         ctx.render_to_slice(
             &global.queue,
             &global.device,
-            out_layer.width() as u32,
-            out_layer.height() as u32,
+            width,
+            height,
             out_layer.buffer_mut(),
-            Some(stride as u32),
+            Some(stride),
         );
     }
 
